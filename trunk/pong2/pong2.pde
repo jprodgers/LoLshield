@@ -1,28 +1,15 @@
+#include <Charliplexing.h>
 
 //**************************************************************//
 //  Name    : Pong for Arduino / Charlieplexing                 //
 //  Author  : Benjamin Sonntag http://benjamin.sonntag.fr/      //
-//  Date    : 28 dec 2009                                       //
-//  Version : 0.1                                               //
-//  Notes   : Uses Charlieplexing techniques to light up        //
+//  Modified: Matt Mets http://cibomahto.com                    //
+//  Date    : 28 May 2010                                       //
+//  Version : 0.2                                               //
+//  Notes   : Uses Charlieplexing library to light up           //
 //          : a matrix of 126 LEDs in a 9x14 grid               //
 //          : from Jimmie P Rodgers www.jimmieprodgers.com      //
 //**************************************************************//
-
-#include <avr/pgmspace.h>  //This is in the Arduino library 
-
-int blinkdelay = 70; //This basically controls brightness. Lower is dimmer
-int runspeed = 14;   //smaller = faster
-
-
-
-/* ---------------------------------------------------------------------------*/
-/** The 2 screens we use for double-buffering 
- */
-uint16_t screens[][9] = {
-  {0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,0}
-};
 
 
 /* ---------------------------------------------------------------------------*/
@@ -44,13 +31,14 @@ uint16_t figures[][7] = {
   
 int x,y,dx,dy;
 int sh1y,sh2y,s1,s2;
-int activescreen;
 
 
 /* ---------------------------------------------------------------------------*/
 /* Arduino setup func
  */
 void setup() {
+  LedSign::Init(DOUBLE_BUFFER);
+  
   x = 3;
   y = 7;
   sh1y=3;
@@ -59,7 +47,7 @@ void setup() {
   dy = 1;
   s1 = 0;
   s2 = 0;
-  activescreen = 0;
+  
   randomSeed(analogRead(0));
   drawscores();
 }
@@ -96,21 +84,21 @@ void loop() {
  
   
   // Clear the non-active screen
-  for(ct2=0;ct2<9;ct2++) { 
-    screens[1-activescreen][ct2]=0;
-  }
+  LedSign::Clear();
+
   // Move the BALL : 
   x=x+dx; 
   y=y+dy;
   
   // Draw the ball :
-  screens[1-activescreen][y]+=1<<x;
-  // Draw the Ship
-  screens[1-activescreen][sh1y]+=1<<0;
-  screens[1-activescreen][sh1y+1]+=1<<0;
-  screens[1-activescreen][sh2y]+=1<<13;
-  screens[1-activescreen][sh2y+1]+=1<<13;
+  LedSign::Set(x,y,1);
 
+  // Draw the Ship
+  LedSign::Set(0, sh1y, 1);
+  LedSign::Set(0, sh1y+1, 1);
+  LedSign::Set(13, sh2y, 1);
+  LedSign::Set(13, sh2y+1, 1);
+  
   // The ships moves when the ball go in their direction. They follow it magically ;) :   
   /* This code is too smart, in fact he is perfekt :) 
   if (dx<0) {
@@ -123,6 +111,7 @@ void loop() {
   }
   // let's code a dummy one 
   */
+  
   if (dx>0) {
     // the ball goes away from me, let's move randomly
     randommove=random(0,3);
@@ -163,12 +152,12 @@ void loop() {
 
   // swap the screens ;) (sometime we may need this double-buffer algorithm...
   // of course, as of today it's a little bit overkill ...)
-  activescreen=1-activescreen; 
+
+  LedSign::Flip();
 
   // Display the bitmap some times 
-  for(ct1=0;ct1<20;ct1++) {
-    DisplayBitMap();
-  }  
+  delay(200);
+  
   // loop :) 
 }
 
@@ -189,135 +178,55 @@ void checkscores() {
 void drawscores() {
   int i,j,ps1,ps2,ct2;
   
-  for(ps1=0;ps1<8;ps1++) {      
-    // Clear the active screen
-    for(ct2=0;ct2<9;ct2++) { 
-      screens[activescreen][ct2]=0;
-    }
-    screens[activescreen][4]+=((1<<6) + (1<<7)); // dash between the scores
+  for(ps1=0;ps1<8;ps1++) {
+    LedSign::Clear();  // Clear the active screen
+
+    LedSign::Set(6,4,1); // dash between the scores
+    LedSign::Set(7,4,1);
+    
     // Fill it with both scores : 
     // Left score goes up>down
     i=ps1; j=6;
     while (i>=0 && j>=0) {
-      screens[activescreen][i]+=figures[s1][j];
+      for(uint8_t k = 0; k < 5; k++) {
+        LedSign::Set(k,i,(figures[s1][j] >> k) & 1 );
+      }
+      
       i--; j--;
     }
     // Right score goes down>up
     ps2=8-ps1;
     i=ps2; j=0;
     while (i<=8 && j<=6) {
-      screens[activescreen][i]+=figures[s2][j]<<9;
-      i++; j++;
-    }
-    // Draw it for a little time ...
-    for(ct2=0;ct2<20;ct2++) {
-      DisplayBitMap();
-    }
-  }  
-  for(ct2=0;ct2<150;ct2++) {
-    DisplayBitMap();
-  }
+      for(uint8_t k = 0; k < 5; k++) {
+        LedSign::Set(k+9,i,(figures[s2][j] >> k) & 1 );
+      }
 
-  for(ct2=0;ct2<9;ct2++) { 
-     screens[1-activescreen][ct2]=0;
+      i++; j++;
+    }    
+
+    LedSign::Flip();
+    delay(200);
   }
+  
+  delay(1500);
+  
+  LedSign::Clear(0);
 
   if (s1==9 || s2==9) {
     for(ps1=0;ps1<3;ps1++) {
-      activescreen=1-activescreen;
-      for(ct2=0;ct2<30;ct2++) {
-        DisplayBitMap();
-      }
-      activescreen=1-activescreen;
-      for(ct2=0;ct2<60;ct2++) {
-        DisplayBitMap();
-      }
+      LedSign::Flip();      
+      delay(300);
+      
+      LedSign::Flip();
+      delay(600);
+      
     }
-    for(ct2=0;ct2<150;ct2++) {
-      DisplayBitMap();
-    }
+    delay(1500);
+
     s1=0; s2=0;
     drawscores();
   }
 }
-
-
-
-
-/* ---------------------------------------------------------------------------*/
-/* The remaining code is (C) Jimmie P Rodgers www.jimmieprodgers.com 
- * but it's open source though ;) 
- */
-
-/* ---------------------------------------------------------------------------*/
-/* The int and consts belows are lol-shield-specific : 
- */
-int pin13 =13;
-int pin12 =12;
-int pin11 =11;
-int pin10 =10;
-int pin09 =9;
-int pin08 =8;
-int pin07 =7;
-int pin06 =6;
-int pin05 =5;
-int pin04 =4;
-int pin03 =3;
-int pin02 =2;
-
-const int pins[] = {
-  pin13,pin12,pin11,pin10,pin09,pin08,pin07,pin06,pin05,pin04,pin03,pin02};
-
-const int ledMap[126][2] ={
-{pin13, pin05},{pin13, pin06},{pin13, pin07},{pin13, pin08},{pin13, pin09},{pin13, pin10},{pin13, pin11},{pin13, pin12},{pin13, pin04},{pin04, pin13},{pin13, pin03},{pin03, pin13},{pin13, pin02},{pin02, pin13},
-{pin12, pin05},{pin12, pin06},{pin12, pin07},{pin12, pin08},{pin12, pin09},{pin12, pin10},{pin12, pin11},{pin12, pin13},{pin12, pin04},{pin04, pin12},{pin12, pin03},{pin03, pin12},{pin12, pin02},{pin02, pin12},
-{pin11, pin05},{pin11, pin06},{pin11, pin07},{pin11, pin08},{pin11, pin09},{pin11, pin10},{pin11, pin12},{pin11, pin13},{pin11, pin04},{pin04, pin11},{pin11, pin03},{pin03, pin11},{pin11, pin02},{pin02, pin11},
-{pin10, pin05},{pin10, pin06},{pin10, pin07},{pin10, pin08},{pin10, pin09},{pin10, pin11},{pin10, pin12},{pin10, pin13},{pin10, pin04},{pin04, pin10},{pin10, pin03},{pin03, pin10},{pin10, pin02},{pin02, pin10},
-{pin09, pin05},{pin09, pin06},{pin09, pin07},{pin09, pin08},{pin09, pin10},{pin09, pin11},{pin09, pin12},{pin09, pin13},{pin09, pin04},{pin04, pin09},{pin09, pin03},{pin03, pin09},{pin09, pin02},{pin02, pin09},
-{pin08, pin05},{pin08, pin06},{pin08, pin07},{pin08, pin09},{pin08, pin10},{pin08, pin11},{pin08, pin12},{pin08, pin13},{pin08, pin04},{pin04, pin08},{pin08, pin03},{pin03, pin08},{pin08, pin02},{pin02, pin08},
-{pin07, pin05},{pin07, pin06},{pin07, pin08},{pin07, pin09},{pin07, pin10},{pin07, pin11},{pin07, pin12},{pin07, pin13},{pin07, pin04},{pin04, pin07},{pin07, pin03},{pin03, pin07},{pin07, pin02},{pin02, pin07},
-{pin06, pin05},{pin06, pin07},{pin06, pin08},{pin06, pin09},{pin06, pin10},{pin06, pin11},{pin06, pin12},{pin06, pin13},{pin06, pin04},{pin04, pin06},{pin06, pin03},{pin03, pin06},{pin06, pin02},{pin02, pin06},
-{pin05, pin06},{pin05, pin07},{pin05, pin08},{pin05, pin09},{pin05, pin10},{pin05, pin11},{pin05, pin12},{pin05, pin13},{pin05, pin04},{pin04, pin05},{pin05, pin03},{pin03, pin05},{pin05, pin02},{pin02, pin05}
-};
-
-
-void turnon(int led) {
-  int pospin = ledMap[led][0];
-  int negpin = ledMap[led][1];
-
-  pinMode (pospin, OUTPUT);
-  pinMode (negpin, OUTPUT);
-  digitalWrite (pospin, HIGH);
-  digitalWrite (negpin, LOW);
-}
-
-void alloff() {
-  DDRD = B00000010;
-  DDRB = B00000000; 
-}
-
-void DisplayBitMap()
-{
-  //  boolean run=true;
-  //  byte frame = 0;
-  byte line = 0;
-  unsigned long data;
-  for(line = 0; line < 9; line++)       {
-        data = screens[activescreen][line];
-        for (byte led=0; led<14; ++led) {
-          if (data & (1<<led)) {
-            turnon((line*14)+led);
-            delayMicroseconds(blinkdelay);
-            alloff();
-          }
-          else {
-            delayMicroseconds(blinkdelay);
-          }
-        }
-      }
-}
-
-/* ---------------------------------------------------------------------------*/
-
 
 
