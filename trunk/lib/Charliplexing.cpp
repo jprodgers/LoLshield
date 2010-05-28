@@ -1,15 +1,17 @@
 /*
-  Charliplexing.h - Using timer2 with 1ms resolution
+  Charliplexing.cpp - Using timer2 with 1ms resolution
   
   Alex Wenger <a.wenger@gmx.de> http://arduinobuch.wordpress.com/
+  Matt Mets <mahto@cibomahto.com> http://cibomahto.com/
   
   Timer init code from MsTimer2 - Javier Valencia <javiervalencia80@gmail.com>
   Misc functions from Benjamin Sonnatg <benjamin@sonntag.fr>
   
   History:
     2009-12-30 - V0.0 wrote the first version at 26C3/Berlin
-    2010-01-01 - V0.1 adding misc utilitary functions 
-      (Clear, Vertical,  Horizontal) comment are doxygen compliants now
+    2010-01-01 - V0.1 adding misc utility functions 
+      (Clear, Vertical,  Horizontal) comment are Doxygen complaints now
+    2010-05-27 - V0.2 add double-buffer mode
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,14 +33,25 @@
 #include <avr/interrupt.h>
 #include "Charliplexing.h"
 
-
 volatile unsigned int LedSign::tcnt2;
 
-
 /* -----------------------------------------------------------------  */
-/** Table for the LED multiplexing cycles, containing 12 cycles made out of two bytes 
+/** Table for the LED multiplexing cycles, containing 12 cycles made out of two bytes
  */
-uint8_t leds[24];
+uint8_t leds[2][24];
+
+/// Determines whether the display is in single or double buffer mode
+uint8_t displayMode;
+
+/// Flag indicating that the display page should be flipped as soon as the
+/// current frame is displayed
+boolean videoFlipPage;
+
+/// Pointer to the buffer that is currently being displayed
+uint8_t* displayBuffer;
+
+/// Pointer to the buffer that should currently be drawn to
+uint8_t* workBuffer;
 
 
 /* -----------------------------------------------------------------  */
@@ -61,7 +74,7 @@ const uint16_t ledMap[252] = {
 /** Constructor : Initialize the interrupt code. 
  * should be called in setup();
  */
-void LedSign::Init(void)
+void LedSign::Init(uint8_t mode)
 {
 	float prescaler = 0.0;
 	
@@ -135,7 +148,47 @@ void LedSign::Init(void)
 #elif defined (__AVR_ATmega8__)
 	TCNT2 = tcnt2;
 	TIMSK |= (1<<TOIE2);
-#endif	
+#endif
+
+    // Record whether we are in single or double buffer mode
+    displayMode = mode;
+
+    // Point the display buffer to the first physical buffer
+    displayBuffer = leds[0];
+
+    // If we are in single buffered mode, point the work buffer
+    // at the same physical buffer as the display buffer.  Otherwise,
+    // point it at the second physical buffer.
+    if( displayMode == SINGLE_BUFFER ) {
+        workBuffer = displayBuffer;
+    }
+    else {
+        workBuffer = leds[1];
+    }
+
+    // Clear the buffer and display it
+    LedSign::Clear(0);
+    LedSign::Flip(false);
+}
+
+
+/* -----------------------------------------------------------------  */
+/** Clear the screen completely
+ * @param blocking if true : wait for flip before returning, if false :
+ *                 return immediately.
+ */
+void LedSign::Flip(bool blocking)
+{
+    if (displayMode == DOUBLE_BUFFER)
+    {
+        // Just set the flip flag, the buffer will flip between redraws
+        videoFlipPage = true;
+
+        // If we are blocking, sit here until the page flips.
+        while (blocking && videoFlipPage) {
+            delay(1);
+        }
+    }
 }
 
 
@@ -144,9 +197,9 @@ void LedSign::Init(void)
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
 void LedSign::Clear(int set) {
-  for(int x=0;x<14;x++)  
-    for(int y=0;y<9;y++) 
-      Set(x,y,set);
+    for(int x=0;x<14;x++)  
+        for(int y=0;y<9;y++) 
+            Set(x,y,set);
 }
 
 
@@ -156,8 +209,8 @@ void LedSign::Clear(int set) {
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
 void LedSign::Horizontal(int y, int set) {
-  for(int x=0;x<14;x++)  
-      Set(x,y,set);
+    for(int x=0;x<14;x++)  
+        Set(x,y,set);
 }
 
 
@@ -167,8 +220,8 @@ void LedSign::Horizontal(int y, int set) {
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
 void LedSign::Vertical(int x, int set) {
-  for(int y=0;y<9;y++)  
-      Set(x,y,set);
+    for(int y=0;y<9;y++)  
+        Set(x,y,set);
 }
 
 
@@ -179,18 +232,18 @@ void LedSign::Vertical(int x, int set) {
  */
 void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 {
-  uint8_t pin_low  = ledMap[x*2+y*28+1];
-  uint8_t pin_high = ledMap[x*2+y*28+0];
-  // pin_low is directly the adress in the led array (minus 2 because the 
-  // first two bytes are used for RS232 communication), but
-  // as it is a two byte array we need to check pin_high also.
-  // If pin_high is bigger than 8 adress has to be increased by one
-  if (c == 1) {
-	leds[(pin_low-2)*2 + (pin_high / 8)] |=  _BV(pin_high & 0x07);   // ON
-  } 
-  else {
-	leds[(pin_low-2)*2 + (pin_high / 8)] &= ~_BV(pin_high & 0x07);   // OFF
-  }
+    uint8_t pin_low  = ledMap[x*2+y*28+1];
+    uint8_t pin_high = ledMap[x*2+y*28+0];
+    // pin_low is directly the address in the led array (minus 2 because the 
+    // first two bytes are used for RS232 communication), but
+    // as it is a two byte array we need to check pin_high also.
+    // If pin_high is bigger than 8 address has to be increased by one
+    if (c == 1) {
+        workBuffer[(pin_low-2)*2 + (pin_high / 8)] |=  _BV(pin_high & 0x07);   // ON
+    } 
+    else {
+        workBuffer[(pin_low-2)*2 + (pin_high / 8)] &= ~_BV(pin_high & 0x07);   // OFF
+    }
 }
 
 
@@ -199,37 +252,50 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
  */
 ISR(TIMER2_OVF_vect) {
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
-	TCNT2 = LedSign::tcnt2;
+    TCNT2 = LedSign::tcnt2;
 #elif defined (__AVR_ATmega128__)
-	TCNT2 = LedSign::tcnt2;
+    TCNT2 = LedSign::tcnt2;
 #elif defined (__AVR_ATmega8__)
-	TCNT2 = LedSign::tcnt2;
+    TCNT2 = LedSign::tcnt2;
 #endif
 
-  // 12 Cycles of Matrix
-  static uint8_t i;
-  
-  i++;
-  if (i > 12) i = 0;
-  
-  if (i < 6) {
-    DDRD  = _BV(i+2) | leds[i*2];
-	PORTD =            leds[i*2];
+    // 12 Cycles of Matrix
+    static uint8_t i = 0;
 
-	DDRB  =            leds[i*2+1];
-	PORTB =            leds[i*2+1];
-  } else {
-	DDRD =             leds[i*2];
-	PORTD =            leds[i*2];
+    if (i < 6) {
+        DDRD  = _BV(i+2) | displayBuffer[i*2];
+        PORTD =            displayBuffer[i*2];
 
-	DDRB  = _BV(i-6) | leds[i*2+1];
-	PORTB =            leds[i*2+1];      
-  } 
-  /*
-  PORTB = 0xff;
-  PORTD = i;
-  DDRB  = 0xff;
-  DDRD  = 0xff;
-  */
+        DDRB  =            displayBuffer[i*2+1];
+        PORTB =            displayBuffer[i*2+1];
+    } else {
+        DDRD =             displayBuffer[i*2];
+        PORTD =            displayBuffer[i*2];
+
+        DDRB  = _BV(i-6) | displayBuffer[i*2+1];
+        PORTB =            displayBuffer[i*2+1];      
+    } 
+    /*
+       PORTB = 0xff;
+       PORTD = i;
+       DDRB  = 0xff;
+       DDRD  = 0xff;
+     */
+
+    i++;
+    if (i > 12) {
+        i = 0;
+
+        // If the page should be flipped, do it here.
+        if (videoFlipPage && displayMode == DOUBLE_BUFFER)
+        {
+            // TODO: is this an atomic operation?
+            videoFlipPage = false;
+
+            uint8_t* temp = displayBuffer;
+            displayBuffer = workBuffer;
+            workBuffer = temp;
+        }
+    }
 }
 
