@@ -1,0 +1,8 @@
+LedSign	KEYWORD1
+Init	KEYWORD2
+Set	KEYWORD2
+Flip	KEYWORD2
+Clear	KEYWORD2
+Horizontal	KEYWORD2
+Vertical	KEYWORD2
+
