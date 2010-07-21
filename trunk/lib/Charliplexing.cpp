@@ -264,17 +264,6 @@ void LedSign::Vertical(int x, int set) {
 
 /* -----------------------------------------------------------------  */
 /** Set : switch on and off the leds. All the position #for char in frameString:
-#    print ord(char),
-
-
-#for row in range (0, 9):
-#    print row, " ",
-#    rowTotal = 0
-#    for col in range (0,14):
-#        pixel = ord(frameString[row*14+col])
-#        rowTotal += pixel*(2**col)
-#    print rowTotal
-
  * calculations are done here, so we don't need to do in the
  * interrupt code
  */
@@ -294,7 +283,7 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
         workBuffer[bufferNum] |= work;   // ON
     } 
     else {
-        workBuffer[bufferNum] &= work;   // OFF
+        workBuffer[bufferNum] &= ~work;   // OFF
     }
 }
 
