@@ -59,7 +59,12 @@ uint8_t timeOn;
 /// Number of timer counts between screen displays
 uint8_t timeOff;
 
+/// Uncomment to set analog pin 5 high during interrupts, so that an
+/// oscilloscope can be used to measure the processor time taken by it
+//#define MEASURE_ISR_TIME
+#ifdef MEASURE_ISR_TIME
 uint8_t statusPIN = 19;
+#endif
 
 boolean onPhase;
 
@@ -101,8 +106,10 @@ const LEDPosition ledMap[126] = {
  */
 void LedSign::Init(uint8_t mode)
 {
+#ifdef MEASURE_ISR_TIME
     pinMode(statusPIN, OUTPUT);
     digitalWrite(statusPIN, LOW);
+#endif
 
 	float prescaler = 0.0;
 	
@@ -122,7 +129,7 @@ void LedSign::Init(uint8_t mode)
 		TCCR2B &= ~((1<<CS22) | (1<<CS20));
 		prescaler = 8.0;
 	} else { // F_CPU > 16Mhz, prescaler set to 128
-		TCCR2B |= ((1<<CS22);
+		TCCR2B |= (1<<CS22);
 		TCCR2B &= ~((1<<CS21) | (1<<CS20));
 		prescaler = 64.0;
 	}
@@ -314,7 +321,9 @@ void LedSign::SetBrightness(uint8_t brightness)
 /** The Interrupt code goes here !  
  */
 ISR(TIMER2_OVF_vect) {
+#ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, HIGH);
+#endif
 
     if (!onPhase) {
         if (timeOn < 255) {
@@ -396,6 +405,8 @@ ISR(TIMER2_OVF_vect) {
         DDRB  = 0x0;
     }
 
+#ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, LOW);
+#endif
 }
 
