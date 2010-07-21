@@ -114,17 +114,17 @@ void LedSign::Init(uint8_t mode)
 	TIMSK2 &= ~(1<<OCIE2A);
 	
 	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
-		TCCR2B |= (1<<CS22);
-		TCCR2B &= ~((1<<CS21) | (1<<CS20));
-		prescaler = 64.0;
+		TCCR2B |= ((1<<CS21) | (1<<CS20));
+		TCCR2B &= ~(1<<CS22);
+		prescaler = 32.0;
 	} else if (F_CPU < 1000000UL) {	// prescaler set to 8
 		TCCR2B |= (1<<CS21);
 		TCCR2B &= ~((1<<CS22) | (1<<CS20));
 		prescaler = 8.0;
 	} else { // F_CPU > 16Mhz, prescaler set to 128
-		TCCR2B |= ((1<<CS22) | (1<<CS20));
-		TCCR2B &= ~(1<<CS21);
-		prescaler = 128.0;
+		TCCR2B |= ((1<<CS22);
+		TCCR2B &= ~((1<<CS21) | (1<<CS20));
+		prescaler = 64.0;
 	}
 #elif defined (__AVR_ATmega8__)
 	TIMSK &= ~(1<<TOIE2);
@@ -307,15 +307,6 @@ void LedSign::SetBrightness(uint8_t brightness)
     // Then update the registers
     timeOn = newTimeOn;
     timeOff = newTimeOff;
-
-    /*
-    Serial.print(brightness, DEC);
-    Serial.print(" ");
-    Serial.print(timeOn, DEC);
-    Serial.print(" ");
-    Serial.print(timeOff, DEC);
-    Serial.print("\n");
-    */
 }
 
 
