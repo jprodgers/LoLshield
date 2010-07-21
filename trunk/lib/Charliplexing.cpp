@@ -53,6 +53,15 @@ uint8_t* displayBuffer;
 /// Pointer to the buffer that should currently be drawn to
 uint8_t* workBuffer;
 
+/// Number of timer counts to display each row for
+uint8_t timeOn;
+
+/// Number of timer counts between screen displays
+uint8_t timeOff;
+
+uint8_t statusPIN = 19;
+
+boolean onPhase;
 
 /* -----------------------------------------------------------------  */
 /** Table for LED Position in leds[] ram table 
@@ -76,6 +85,9 @@ const uint16_t ledMap[252] = {
  */
 void LedSign::Init(uint8_t mode)
 {
+    pinMode(statusPIN, OUTPUT);
+    digitalWrite(statusPIN, LOW);
+
 	float prescaler = 0.0;
 	
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
@@ -138,6 +150,8 @@ void LedSign::Init(uint8_t mode)
 #endif
 	
 	tcnt2 = 256 - (int)((float)F_CPU * 0.001 / prescaler);
+
+    LedSign::SetBrightness(127);
 	
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
 	TCNT2 = tcnt2;
@@ -246,56 +260,97 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
     }
 }
 
+/* Set the overall brightness of the screen
+ * @param brightness LED brightness, from 0 (off) to 127 (full on)
+ */
+void LedSign::SetBrightness(uint8_t brightness)
+{
+    // An exponential fit seems to approximate a (percieved) linear scale
+    float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
+
+    // Compute on and off times
+    uint8_t interval = 255 - tcnt2;
+    int newTimeOn = 255 -brightnessPercent*interval;
+    int newTimeOff = 255 - (1 - brightnessPercent)*interval;
+
+    // Then update the registers
+    timeOn = newTimeOn;
+    timeOff = newTimeOff;
+}
+
 
 /* -----------------------------------------------------------------  */
 /** The Interrupt code goes here !  
  */
 ISR(TIMER2_OVF_vect) {
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
-    TCNT2 = LedSign::tcnt2;
-#elif defined (__AVR_ATmega128__)
-    TCNT2 = LedSign::tcnt2;
-#elif defined (__AVR_ATmega8__)
-    TCNT2 = LedSign::tcnt2;
-#endif
+    digitalWrite(statusPIN, HIGH);
 
-    // 12 Cycles of Matrix
-    static uint8_t i = 0;
-
-    if (i < 6) {
-        DDRD  = _BV(i+2) | displayBuffer[i*2];
-        PORTD =            displayBuffer[i*2];
-
-        DDRB  =            displayBuffer[i*2+1];
-        PORTB =            displayBuffer[i*2+1];
-    } else {
-        DDRD =             displayBuffer[i*2];
-        PORTD =            displayBuffer[i*2];
-
-        DDRB  = _BV(i-6) | displayBuffer[i*2+1];
-        PORTB =            displayBuffer[i*2+1];      
-    } 
-    /*
-       PORTB = 0xff;
-       PORTD = i;
-       DDRB  = 0xff;
-       DDRD  = 0xff;
-     */
-
-    i++;
-    if (i > 12) {
-        i = 0;
-
-        // If the page should be flipped, do it here.
-        if (videoFlipPage && displayMode == DOUBLE_BUFFER)
-        {
-            // TODO: is this an atomic operation?
-            videoFlipPage = false;
-
-            uint8_t* temp = displayBuffer;
-            displayBuffer = workBuffer;
-            workBuffer = temp;
+    if (!onPhase) {
+        onPhase = true;
+    }
+    else {
+        if (timeOff > 0) {
+            onPhase = false;
         }
     }
+
+    if ( onPhase ) {
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
+        TCNT2 = timeOn;
+#elif defined (__AVR_ATmega128__)
+        TCNT2 = timeOn;
+#elif defined (__AVR_ATmega8__)
+        TCNT2 = timeOn;
+#endif
+
+        // 12 Cycles of Matrix
+        static uint8_t i = 0;
+
+        if (i < 6) {
+            DDRD  = _BV(i+2) | displayBuffer[i*2];
+            PORTD =            displayBuffer[i*2];
+
+            DDRB  =            displayBuffer[i*2+1];
+            PORTB =            displayBuffer[i*2+1];
+        } else {
+            DDRD =             displayBuffer[i*2];
+            PORTD =            displayBuffer[i*2];
+
+            DDRB  = _BV(i-6) | displayBuffer[i*2+1];
+            PORTB =            displayBuffer[i*2+1];      
+        } 
+
+        i++;
+
+        if (i > 12) {
+            i = 0;
+
+            // If the page should be flipped, do it here.
+            if (videoFlipPage && displayMode == DOUBLE_BUFFER)
+            {
+                // TODO: is this an atomic operation?
+                videoFlipPage = false;
+
+                uint8_t* temp = displayBuffer;
+                displayBuffer = workBuffer;
+                workBuffer = temp;
+            }
+        }
+    }
+    else {
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
+        TCNT2 = timeOff;
+#elif defined (__AVR_ATmega128__)
+        TCNT2 = timeOff;
+#elif defined (__AVR_ATmega8__)
+        TCNT2 = timeOff;
+#endif
+
+        // Turn everything off
+        DDRD  = 0x0;
+        DDRB  = 0x0;
+    }
+
+    digitalWrite(statusPIN, LOW);
 }
 
