@@ -16,7 +16,7 @@ import sys
 # Edit this to reflect the order that characters appear
 # in your font.  Each character should be seperated by
 # one column of white pixels.
-char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!?@/:;()"
+char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.!?@/:;()"
  
 # Header and types for font.
 # We're a little tight on space, so it's program memory
