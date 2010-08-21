@@ -12,6 +12,7 @@
     2010-01-01 - V0.1 adding misc utility functions 
       (Clear, Vertical,  Horizontal) comment are Doxygen complaints now
     2010-05-27 - V0.2 add double-buffer mode
+    2010-08-18 - V0.9 Merge brightness and grayscale
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,38 +36,74 @@
 
 volatile unsigned int LedSign::tcnt2;
 
+
+struct videoPage {
+    uint8_t pixels[COLORS-1][48];  // TODO: is 48 right?
+}; 
+
 /* -----------------------------------------------------------------  */
-/** Table for the LED multiplexing cycles, containing 24 cycles made out of two bytes
+/** Table for the LED multiplexing cycles
+ * Each frame is made of 24 bytes (for the 24 display cycles)
+ * There are 3 frames per buffer in grayscale mode (one for each brigtness)
+ * and twice that many to support double-buffered grayscale.
  */
-uint8_t leds[2][48];
+videoPage leds[2];
 
 /// Determines whether the display is in single or double buffer mode
-uint8_t displayMode;
+uint8_t displayMode = SINGLE_BUFFER;
 
 /// Flag indicating that the display page should be flipped as soon as the
 /// current frame is displayed
-boolean videoFlipPage;
+volatile boolean videoFlipPage = false;
 
 /// Pointer to the buffer that is currently being displayed
-uint8_t* displayBuffer;
+videoPage* displayBuffer;
 
 /// Pointer to the buffer that should currently be drawn to
-uint8_t* workBuffer;
+videoPage* workBuffer;
 
-/// Number of timer counts to display each row for
-uint8_t timeOn;
+// For grayscale support
+// TODO: map these based on tcnt2 calculation
+//uint8_t pageCounts[COLORS] = {250, 205, 88, 0};
+uint8_t pageCounts[COLORS] = {240, 205, 88, 0};
 
-/// Number of timer counts between screen displays
-uint8_t timeOff;
+
+/// Flag indicating that the pageCounts buffer should be flipped as soon as the
+/// current frame is displayed
+volatile boolean videoFlipTimer = false;
+
+
+// Timer counts to display each page for, plus off time
+typedef struct timerInfo {
+    uint8_t counts[COLORS];
+    uint8_t prescaler[COLORS];
+};
+
+// Double buffer the timing information, of course.
+timerInfo* frontTimer;
+timerInfo* backTimer;
+
+timerInfo* tempTimer;
+
+timerInfo timer[2];
+
+// Record a slow and fast prescaler for later use
+typedef struct prescalerInfo {
+    uint8_t relativeSpeed;
+    uint8_t TCCR2;
+};
+
+// TODO: Generate these based on processor type and clock speed
+prescalerInfo slowPrescaler = {1, 0x03};
+//prescalerInfo fastPrescaler = {32, 0x01};
+prescalerInfo fastPrescaler = {4, 0x02};
 
 /// Uncomment to set analog pin 5 high during interrupts, so that an
 /// oscilloscope can be used to measure the processor time taken by it
-//#define MEASURE_ISR_TIME
+#define MEASURE_ISR_TIME
 #ifdef MEASURE_ISR_TIME
 uint8_t statusPIN = 19;
 #endif
-
-boolean onPhase;
 
 typedef struct LEDPosition {
     uint8_t high;
@@ -171,11 +208,47 @@ void LedSign::Init(uint8_t mode)
 		prescaler = 256.0;
 	}
 #endif
-	
+
 	tcnt2 = 256 - (int)((float)F_CPU * 0.0005 / prescaler);
 
     LedSign::SetBrightness(127);
 	
+
+    // Record whether we are in single or double buffer mode
+    displayMode = mode;
+    videoFlipPage = false;
+
+    // Point the display buffer to the first physical buffer
+    displayBuffer = &leds[0];
+
+    // If we are in single buffered mode, point the work buffer
+    // at the same physical buffer as the display buffer.  Otherwise,
+    // point it at the second physical buffer.
+    if( displayMode & DOUBLE_BUFFER ) {
+        workBuffer = &leds[1];
+    }
+    else {
+        workBuffer = displayBuffer;
+    }
+
+    // Set up the timer buffering
+    frontTimer = &timer[0];
+    backTimer = &timer[1];
+
+    videoFlipTimer = false;
+
+    // And write some default stuff into the front timer
+    for (int i = 0; i < COLORS; i++) {
+        frontTimer->counts[i] = pageCounts[i];
+        // TODO: Generate this dynamically
+        frontTimer->prescaler[i] = slowPrescaler.TCCR2;
+    }
+
+    // Clear the buffer and display it
+    LedSign::Clear(0);
+    LedSign::Flip(false);
+
+    // Then start the display
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
 	TCNT2 = tcnt2;
 	TIMSK2 |= (1<<TOIE2);
@@ -187,25 +260,14 @@ void LedSign::Init(uint8_t mode)
 	TIMSK |= (1<<TOIE2);
 #endif
 
-    // Record whether we are in single or double buffer mode
-    displayMode = mode;
-
-    // Point the display buffer to the first physical buffer
-    displayBuffer = leds[0];
-
-    // If we are in single buffered mode, point the work buffer
-    // at the same physical buffer as the display buffer.  Otherwise,
-    // point it at the second physical buffer.
-    if( displayMode == SINGLE_BUFFER ) {
-        workBuffer = displayBuffer;
+    // If we are in double-buffer mode, wait until the display flips before we
+    // return
+    if (displayMode & DOUBLE_BUFFER)
+    {
+        while (videoFlipPage) {
+            delay(1);
+        }
     }
-    else {
-        workBuffer = leds[1];
-    }
-
-    // Clear the buffer and display it
-    LedSign::Clear(0);
-    LedSign::Flip(false);
 }
 
 
@@ -216,7 +278,7 @@ void LedSign::Init(uint8_t mode)
  */
 void LedSign::Flip(bool blocking)
 {
-    if (displayMode == DOUBLE_BUFFER)
+    if (displayMode & DOUBLE_BUFFER)
     {
         // Just set the flip flag, the buffer will flip between redraws
         videoFlipPage = true;
@@ -279,30 +341,83 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
     uint8_t bufferNum = (pin_low-2)*2 + (pin_high / 8) + ((pin_high > 7)?24:0);
     uint8_t work = _BV(pin_high & 0x07);
 
-    if (c == 1) {
-        workBuffer[bufferNum] |= work;   // ON
-    } 
-    else {
-        workBuffer[bufferNum] &= ~work;   // OFF
+    // If we aren't in grayscale mode, just map any pin brightness to max
+    if (c > 0 && !(displayMode & GRAYSCALE)) {
+        c = COLORS-1;
+    }
+
+    for (int i = 0; i < COLORS-1; i++) {
+        if( c > i ) {
+            workBuffer->pixels[i][bufferNum] |= work;   // ON
+        }
+        else {
+            workBuffer->pixels[i][bufferNum] &= ~work;   // OFF
+        }
     }
 }
+
 
 /* Set the overall brightness of the screen
  * @param brightness LED brightness, from 0 (off) to 127 (full on)
  */
 void LedSign::SetBrightness(uint8_t brightness)
 {
+    Serial.print("starting ");
+
+    // Wait until the previous brightness request goes through
+    while( videoFlipTimer )
+    {
+        delay(1);
+    }
+
     // An exponential fit seems to approximate a (perceived) linear scale
     float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
 
-    // Compute on and off times
-    uint8_t interval = 255 - tcnt2;
-    int newTimeOn = 255 -brightnessPercent*interval;
-    int newTimeOff = 255 - (1 - brightnessPercent)*interval;
+    uint8_t difference = 0;
+
+    Serial.print((int)brightness);
+    Serial.print(" ");
+
+    Serial.print((int)(brightnessPercent*100));
+    Serial.print(" ");
+
+    // Compute on time for each of the pages
+    for (uint8_t i = 0; i < COLORS - 1; i++) {
+        uint8_t interval = 255 - pageCounts[i];
+
+        backTimer->counts[i] = 255 - brightnessPercent*interval;
+
+        difference += backTimer->counts[i] - pageCounts[i];
+
+        if (backTimer->counts[i] < 240) {
+            // use low-pres prescaler
+            backTimer->prescaler[i] = slowPrescaler.TCCR2;
+        }
+        else {
+            // use high-res prescaler
+            backTimer->counts[i] = 255 - brightnessPercent*interval*fastPrescaler.relativeSpeed;
+
+            backTimer->prescaler[i] = fastPrescaler.TCCR2;
+        }
+
+        Serial.print((int)backTimer->counts[i]);
+        Serial.print(":");
+        Serial.print((int)backTimer->prescaler[i]);
+        Serial.print(" ");
+    }
+
+    // Compute off time
+    backTimer->counts[COLORS - 1] = 255 - difference;
+    backTimer->prescaler[COLORS - 1] = slowPrescaler.TCCR2;
+
+    Serial.print((int)backTimer->counts[COLORS - 1]);
+    Serial.print(":");
+    Serial.print((int)backTimer->prescaler[COLORS - 1]);
+    Serial.print(" ");
 
     // Then update the registers
-    timeOn = newTimeOn;
-    timeOff = newTimeOff;
+    videoFlipTimer = true;
+    Serial.print("done\n");
 }
 
 
@@ -310,92 +425,98 @@ void LedSign::SetBrightness(uint8_t brightness)
 /** The Interrupt code goes here !  
  */
 ISR(TIMER2_OVF_vect) {
+        DDRD  = 0x0;
+        DDRB  = 0x0;
 #ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, HIGH);
 #endif
 
-    if (!onPhase) {
-        if (timeOn < 255) {
-            onPhase = true;
-        }
-    }
-    else {
-        if (timeOff < 255) {
-            onPhase = false;
-        }
-    }
+    // For each cycle, we have potential COLORS pages to display.
+    // Once every page has been displayed, then we move on to the next
+    // cycle.
 
-    if ( onPhase ) {
+    // 24 Cycles of Matrix
+    static uint8_t cycle = 0;
+
+    // COLORS pages to display
+    static uint8_t page = 0;
+
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
-        TCNT2 = timeOn;
+    TCCR2B = frontTimer->prescaler[page];
+    TCNT2 = frontTimer->counts[page];
 #elif defined (__AVR_ATmega128__)
-        TCNT2 = timeOn;
+    TCCR2B = frontTimer->prescaler[page];
+    TCNT2 = frontTimer->counts[page];
 #elif defined (__AVR_ATmega8__)
-        TCNT2 = timeOn;
+    TCCR2B = frontTimer->prescaler[page];
+    TCNT2 = frontTimer->counts[page];
 #endif
 
-        // 24 Cycles of Matrix
-        static uint8_t i = 0;
+    if ( page < COLORS - 1) { 
 
-        if (i < 6) {
-            DDRD  = _BV(i+2) | displayBuffer[i*2];
-            PORTD =            displayBuffer[i*2];
+        if (cycle < 6) {
+            DDRD  = _BV(cycle+2) | displayBuffer->pixels[page][cycle*2];
+            PORTD =            displayBuffer->pixels[page][cycle*2];
 
-            DDRB  =            displayBuffer[i*2+1];
-            PORTB =            displayBuffer[i*2+1];
-        } else if (i < 12) {
-            DDRD =             displayBuffer[i*2];
-            PORTD =            displayBuffer[i*2];
+            DDRB  =            displayBuffer->pixels[page][cycle*2+1];
+            PORTB =            displayBuffer->pixels[page][cycle*2+1];
+        } else if (cycle < 12) {
+            DDRD =             displayBuffer->pixels[page][cycle*2];
+            PORTD =            displayBuffer->pixels[page][cycle*2];
 
-            DDRB  = _BV(i-6) | displayBuffer[i*2+1];
-            PORTB =            displayBuffer[i*2+1];      
-        } else if (i < 18) {
-            DDRD  = _BV(i+2-12) | displayBuffer[i*2];
-            PORTD =            displayBuffer[i*2];
+            DDRB  = _BV(cycle-6) | displayBuffer->pixels[page][cycle*2+1];
+            PORTB =            displayBuffer->pixels[page][cycle*2+1];      
+        } else if (cycle < 18) {
+            DDRD  = _BV(cycle+2-12) | displayBuffer->pixels[page][cycle*2];
+            PORTD =            displayBuffer->pixels[page][cycle*2];
 
-            DDRB  =            displayBuffer[i*2+1];
-            PORTB =            displayBuffer[i*2+1];
+            DDRB  =            displayBuffer->pixels[page][cycle*2+1];
+            PORTB =            displayBuffer->pixels[page][cycle*2+1];
         } else {
-            DDRD =             displayBuffer[i*2];
-            PORTD =            displayBuffer[i*2];
+            DDRD =             displayBuffer->pixels[page][cycle*2];
+            PORTD =            displayBuffer->pixels[page][cycle*2];
 
-            DDRB  = _BV(i-6-12) | displayBuffer[i*2+1];
-            PORTB =            displayBuffer[i*2+1];      
-        } 
-
-        i++;
-
-        if (i > 24) {
-            i = 0;
-
-            // If the page should be flipped, do it here.
-            if (videoFlipPage && displayMode == DOUBLE_BUFFER)
-            {
-                // TODO: is this an atomic operation?
-                videoFlipPage = false;
-
-                uint8_t* temp = displayBuffer;
-                displayBuffer = workBuffer;
-                workBuffer = temp;
-            }
+            DDRB  = _BV(cycle-6-12) | displayBuffer->pixels[page][cycle*2+1];
+            PORTB =            displayBuffer->pixels[page][cycle*2+1];      
         }
-    }
+    } 
     else {
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
-        TCNT2 = timeOff;
-#elif defined (__AVR_ATmega128__)
-        TCNT2 = timeOff;
-#elif defined (__AVR_ATmega8__)
-        TCNT2 = timeOff;
-#endif
-
         // Turn everything off
         DDRD  = 0x0;
         DDRB  = 0x0;
+    }
+
+    page++;
+
+    if (page >= COLORS) {
+        page = 0;
+        cycle++;
+    }
+
+    if (cycle > 24) {
+        cycle = 0;
+
+        // If the page should be flipped, do it here.
+        if (videoFlipPage && (displayMode & DOUBLE_BUFFER))
+        {
+            // TODO: is this an atomic operation?
+            videoFlipPage = false;
+
+            videoPage* temp = displayBuffer;
+            displayBuffer = workBuffer;
+            workBuffer = temp;
+        }
+
+        if (videoFlipTimer) {
+            videoFlipTimer = false;
+
+            tempTimer = frontTimer;
+            frontTimer = backTimer;
+            backTimer = tempTimer;
+        }
     }
 
 #ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, LOW);
 #endif
 }
-
