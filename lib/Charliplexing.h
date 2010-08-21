@@ -13,6 +13,12 @@
 
 #define SINGLE_BUFFER 0
 #define DOUBLE_BUFFER 1
+#define GRAYSCALE     2
+
+#define DISPLAY_COLS 14     // Number of columns in the display
+#define DISPLAY_ROWS 9      // Number of rows in the display
+#define BIT_DEPTH 2         // Number of bits per pixel
+#define COLORS (1<<BIT_DEPTH) // Number of unique shades we can display
 
 namespace LedSign
 {
