@@ -215,8 +215,6 @@ void LedSign::Init(uint8_t mode)
 
 	tcnt2 = 256 - (int)((float)F_CPU * 0.0005 / prescaler);
 
-    LedSign::SetBrightness(127);
-	
 
     // Record whether we are in single or double buffer mode
     displayMode = mode;
@@ -248,6 +246,8 @@ void LedSign::Init(uint8_t mode)
         frontTimer->prescaler[i] = slowPrescaler.TCCR2;
     }
 
+    LedSign::SetBrightness(127);
+	
     // Clear the buffer and display it
     LedSign::Clear(0);
     LedSign::Flip(false);
