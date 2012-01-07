@@ -32,7 +32,7 @@
 #include <Charliplexing.h> //Imports the library, which needs to be
                            //Initialized in setup.
 
-int blinkdelay = 100;      //Sets the time each frame is shown
+int blinkdelay = 33;      //Sets the time each frame is shown
 
 /*
 The BitMap array is what contains the frame data. Each line is one full frame.
@@ -127,13 +127,14 @@ uint16_t BitMap[][9] PROGMEM = {
 };
 
 void setup() {
-  LedSign::Init();  //Initializes the screen
+  LedSign::Init(GRAYSCALE);  //Initializes the screen
 }
 void loop() {
-  DisplayBitMap();  //Displays the bitmap
+  for (uint8_t gray = 1; gray < COLORS; gray++)
+      DisplayBitMap(gray);  //Displays the bitmap
 }
 
-void DisplayBitMap()
+void DisplayBitMap(uint8_t grayscale)
 {
   boolean run=true;    //While this is true, the screen updates
   byte frame = 0;      //Frame counter
@@ -156,7 +157,7 @@ void DisplayBitMap()
       //is turned on, otherwise it is turned off.
       else for (byte led=0; led<14; ++led) {
         if (data & (1<<led)) {
-          LedSign::Set(led, line, 1);
+          LedSign::Set(led, line, grayscale);
         }
         else {
           LedSign::Set(led, line, 0);
