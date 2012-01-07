@@ -35,6 +35,7 @@
 #include "WProgram.h"
 #endif
 #include <inttypes.h>
+#include <math.h>
 #include <avr/interrupt.h>
 #include "Charliplexing.h"
 
@@ -42,13 +43,13 @@ volatile unsigned int LedSign::tcnt2;
 
 
 struct videoPage {
-    uint8_t pixels[COLORS-1][48];  // TODO: is 48 right?
+    uint8_t pixels[SHADES][48];  // TODO: is 48 right?
 }; 
 
 /* -----------------------------------------------------------------  */
 /** Table for the LED multiplexing cycles
  * Each frame is made of 24 bytes (for the 24 display cycles)
- * There are 3 frames per buffer in grayscale mode (one for each brigtness)
+ * There are SHADES frames per buffer in grayscale mode (one for each brigtness)
  * and twice that many to support double-buffered grayscale.
  */
 videoPage leds[2];
@@ -66,21 +67,15 @@ videoPage* displayBuffer;
 /// Pointer to the buffer that should currently be drawn to
 videoPage* workBuffer;
 
-// For grayscale support
-// TODO: map these based on tcnt2 calculation
-//uint8_t pageCounts[COLORS] = {250, 205, 88, 0};
-uint8_t pageCounts[COLORS] = {240, 205, 88, 0};
-
-
-/// Flag indicating that the pageCounts buffer should be flipped as soon as the
+/// Flag indicating that the timer buffer should be flipped as soon as the
 /// current frame is displayed
 volatile boolean videoFlipTimer = false;
 
 
 // Timer counts to display each page for, plus off time
 typedef struct timerInfo {
-    uint8_t counts[COLORS];
-    uint8_t prescaler[COLORS];
+    uint8_t counts[SHADES];
+    uint8_t prescaler[SHADES];
 };
 
 // Double buffer the timing information, of course.
@@ -101,6 +96,8 @@ typedef struct prescalerInfo {
 prescalerInfo slowPrescaler = {1, 0x03};
 //prescalerInfo fastPrescaler = {32, 0x01};
 prescalerInfo fastPrescaler = {4, 0x02};
+
+static bool initialized = false;
 
 /// Uncomment to set analog pin 5 high during interrupts, so that an
 /// oscilloscope can be used to measure the processor time taken by it
@@ -215,7 +212,6 @@ void LedSign::Init(uint8_t mode)
 
 	tcnt2 = 256 - (int)((float)F_CPU * 0.0005 / prescaler);
 
-
     // Record whether we are in single or double buffer mode
     displayMode = mode;
     videoFlipPage = false;
@@ -238,29 +234,17 @@ void LedSign::Init(uint8_t mode)
     backTimer = &timer[1];
 
     videoFlipTimer = false;
-
-    // And write some default stuff into the front timer
-    for (int i = 0; i < COLORS; i++) {
-        frontTimer->counts[i] = pageCounts[i];
-        // TODO: Generate this dynamically
-        frontTimer->prescaler[i] = slowPrescaler.TCCR2;
-    }
-
-    LedSign::SetBrightness(127);
+    SetBrightness(127);
 	
     // Clear the buffer and display it
     LedSign::Clear(0);
     LedSign::Flip(false);
 
     // Then start the display
+	TCNT2 = tcnt2;
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
-	TCNT2 = tcnt2;
 	TIMSK2 |= (1<<TOIE2);
-#elif defined (__AVR_ATmega128__)
-	TCNT2 = tcnt2;
-	TIMSK |= (1<<TOIE2);
-#elif defined (__AVR_ATmega8__)
-	TCNT2 = tcnt2;
+#elif defined (__AVR_ATmega128__) || defined (__AVR_ATmega8__)
 	TIMSK |= (1<<TOIE2);
 #endif
 
@@ -272,6 +256,8 @@ void LedSign::Init(uint8_t mode)
             delay(1);
         }
     }
+
+    initialized = true;
 }
 
 
@@ -347,10 +333,10 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 
     // If we aren't in grayscale mode, just map any pin brightness to max
     if (c > 0 && !(displayMode & GRAYSCALE)) {
-        c = COLORS-1;
+        c = SHADES-1;
     }
 
-    for (int i = 0; i < COLORS-1; i++) {
+    for (int i = 0; i < SHADES-1; i++) {
         if( c > i ) {
             workBuffer->pixels[i][bufferNum] |= work;   // ON
         }
@@ -364,64 +350,62 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 /* Set the overall brightness of the screen
  * @param brightness LED brightness, from 0 (off) to 127 (full on)
  */
+
 void LedSign::SetBrightness(uint8_t brightness)
 {
-    Serial.print("starting ");
+    // An exponential fit seems to approximate a (perceived) linear scale
+    float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
+    uint8_t difference = 0;
+
+    /*   ---- This needs review! Please review. -- thilo  */
+    // set up page counts
+    // TODO: make SHADES a function parameter. This would require some refactoring.
+    int start = 15;
+    int max = 255;
+    float scale = 1.5;
+    float delta = pow( max - start , 1.0 / scale) / (SHADES - 1);
+    uint8_t pageCounts[SHADES]; 
+
+    pageCounts[0] = max - start;
+    for (uint8_t i=1; i<SHADES; i++) {
+        pageCounts[i] = max - ( pow( i * delta, scale ) + start );
+    }
+    Serial.end();
+
+    if (! initialized) {
+       // set front timer defaults
+        for (int i = 0; i < SHADES; i++) {
+            frontTimer->counts[i] = pageCounts[i];
+            // TODO: Generate this dynamically
+            frontTimer->prescaler[i] = slowPrescaler.TCCR2;
+        }
+    }
 
     // Wait until the previous brightness request goes through
-    while( videoFlipTimer )
-    {
+    while( videoFlipTimer ) {
         delay(1);
     }
 
-    // An exponential fit seems to approximate a (perceived) linear scale
-    float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
-
-    uint8_t difference = 0;
-
-    Serial.print((int)brightness);
-    Serial.print(" ");
-
-    Serial.print((int)(brightnessPercent*100));
-    Serial.print(" ");
-
     // Compute on time for each of the pages
-    for (uint8_t i = 0; i < COLORS - 1; i++) {
+    // Use the fast timer; slow timer is only useful for < 3 shades.
+    for (uint8_t i = 0; i < SHADES - 1; i++) {
         uint8_t interval = 255 - pageCounts[i];
 
-        backTimer->counts[i] = 255 - brightnessPercent*interval;
-
+        backTimer->counts[i] = 255 -    brightnessPercent 
+                                      * interval 
+                                      * fastPrescaler.relativeSpeed;
+        backTimer->prescaler[i] = fastPrescaler.TCCR2;
         difference += backTimer->counts[i] - pageCounts[i];
-
-        if (backTimer->counts[i] < 240) {
-            // use low-pres prescaler
-            backTimer->prescaler[i] = slowPrescaler.TCCR2;
-        }
-        else {
-            // use high-res prescaler
-            backTimer->counts[i] = 255 - brightnessPercent*interval*fastPrescaler.relativeSpeed;
-
-            backTimer->prescaler[i] = fastPrescaler.TCCR2;
-        }
-
-        Serial.print((int)backTimer->counts[i]);
-        Serial.print(":");
-        Serial.print((int)backTimer->prescaler[i]);
-        Serial.print(" ");
     }
 
     // Compute off time
-    backTimer->counts[COLORS - 1] = 255 - difference;
-    backTimer->prescaler[COLORS - 1] = slowPrescaler.TCCR2;
+    backTimer->counts[SHADES - 1] = 255 - difference;
+    backTimer->prescaler[SHADES - 1] = slowPrescaler.TCCR2;
 
-    Serial.print((int)backTimer->counts[COLORS - 1]);
-    Serial.print(":");
-    Serial.print((int)backTimer->prescaler[COLORS - 1]);
-    Serial.print(" ");
+    /*   ---- End of "This needs review! Please review." -- thilo  */
 
-    // Then update the registers
+    // Have the ISR update the timer registers next run
     videoFlipTimer = true;
-    Serial.print("done\n");
 }
 
 
@@ -435,28 +419,20 @@ ISR(TIMER2_OVF_vect) {
     digitalWrite(statusPIN, HIGH);
 #endif
 
-    // For each cycle, we have potential COLORS pages to display.
+    // For each cycle, we have potential SHADES pages to display.
     // Once every page has been displayed, then we move on to the next
     // cycle.
 
     // 24 Cycles of Matrix
     static uint8_t cycle = 0;
 
-    // COLORS pages to display
+    // SHADES pages to display
     static uint8_t page = 0;
 
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
     TCCR2B = frontTimer->prescaler[page];
     TCNT2 = frontTimer->counts[page];
-#elif defined (__AVR_ATmega128__)
-    TCCR2B = frontTimer->prescaler[page];
-    TCNT2 = frontTimer->counts[page];
-#elif defined (__AVR_ATmega8__)
-    TCCR2B = frontTimer->prescaler[page];
-    TCNT2 = frontTimer->counts[page];
-#endif
 
-    if ( page < COLORS - 1) { 
+    if ( page < SHADES - 1) { 
 
         if (cycle < 6) {
             DDRD  = _BV(cycle+2) | displayBuffer->pixels[page][cycle*2];
@@ -492,7 +468,7 @@ ISR(TIMER2_OVF_vect) {
 
     page++;
 
-    if (page >= COLORS) {
+    if (page >= SHADES) {
         page = 0;
         cycle++;
     }

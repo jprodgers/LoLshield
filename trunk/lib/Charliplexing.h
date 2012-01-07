@@ -17,8 +17,7 @@
 
 #define DISPLAY_COLS 14     // Number of columns in the display
 #define DISPLAY_ROWS 9      // Number of rows in the display
-#define BIT_DEPTH 2         // Number of bits per pixel
-#define COLORS (1<<BIT_DEPTH) // Number of unique shades we can display
+#define SHADES 8 // Number of distinct shades to display, including black, i.e. OFF
 
 namespace LedSign
 {
