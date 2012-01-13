@@ -34,7 +34,6 @@ void setup()                    // run once, when the sketch starts
 
 void loop()                     // run over and over again
 { 
-    Serial.begin(9600);
     // inhale
     for (int8_t i=0; i <= SHADES; i++) {
         uint8_t sleep =   inhale_time_ms / SHADES 
