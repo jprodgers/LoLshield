@@ -53,14 +53,20 @@ struct videoPage {
  * There are SHADES frames per buffer in grayscale mode (one for each brigtness)
  * and twice that many to support double-buffered grayscale.
  */
+#ifdef DOUBLE_BUFFER
 videoPage leds[2];
+#else
+videoPage leds[1];
+#endif
 
 /// Determines whether the display is in single or double buffer mode
 uint8_t displayMode = SINGLE_BUFFER;
 
 /// Flag indicating that the display page should be flipped as soon as the
 /// current frame is displayed
+#ifdef DOUBLE_BUFFER
 volatile boolean videoFlipPage = false;
+#endif
 
 /// Pointer to the buffer that is currently being displayed
 videoPage* displayBuffer;
@@ -221,21 +227,26 @@ void LedSign::Init(uint8_t mode)
 
     // Record whether we are in single or double buffer mode
     displayMode = mode;
+#ifdef DOUBLE_BUFFER
     videoFlipPage = false;
+#endif
 
     // Point the display buffer to the first physical buffer
     displayBuffer = &leds[0];
     displayPointer = displayBuffer->pixels;
 
+#ifdef DOUBLE_BUFFER
     // If we are in single buffered mode, point the work buffer
     // at the same physical buffer as the display buffer.  Otherwise,
     // point it at the second physical buffer.
     if( displayMode & DOUBLE_BUFFER ) {
         workBuffer = &leds[1];
-    }
-    else {
+    } else {
         workBuffer = displayBuffer;
     }
+#else
+    workBuffer = displayBuffer;
+#endif
 
     // Set up the timer buffering
     frontTimer = &timer[0];
@@ -246,7 +257,9 @@ void LedSign::Init(uint8_t mode)
 	
     // Clear the buffer and display it
     LedSign::Clear(0);
+#ifdef DOUBLE_BUFFER
     LedSign::Flip(false);
+#endif
 
     // Then start the display
 	TCNT2 = tcnt2;
@@ -256,6 +269,7 @@ void LedSign::Init(uint8_t mode)
 	TIMSK |= (1<<TOIE2);
 #endif
 
+#ifdef DOUBLE_BUFFER
     // If we are in double-buffer mode, wait until the display flips before we
     // return
     if (displayMode & DOUBLE_BUFFER)
@@ -264,11 +278,13 @@ void LedSign::Init(uint8_t mode)
             delay(1);
         }
     }
+#endif
 
     initialized = true;
 }
 
 
+#ifdef DOUBLE_BUFFER
 /* -----------------------------------------------------------------  */
 /** Signal that the front and back buffers should be flipped
  * @param blocking if true : wait for flip before returning, if false :
@@ -287,6 +303,7 @@ void LedSign::Flip(bool blocking)
         }
     }
 }
+#endif
 
 
 /* -----------------------------------------------------------------  */
@@ -329,10 +346,14 @@ void LedSign::Vertical(int x, int set) {
  */
 void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 {
+#ifdef GRAYSCALE
     // If we aren't in grayscale mode, just map any pin brightness to max
-    if (c > 0 && !(displayMode & GRAYSCALE)) {
+    if (c > 0 && !(displayMode & GRAYSCALE))
         c = SHADES-1;
-    }
+#else
+    if (c)
+        c = SHADES-1;
+#endif
 
     uint8_t mask = pgm_read_byte_near(&ledMap[x+y*14].mask);
     uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*14].cycle);
@@ -507,6 +528,7 @@ ISR(TIMER2_OVF_vect) {
         if (cycle >= 24) {
             cycle = 0;
 
+#ifdef DOUBLE_BUFFER
             // If the page should be flipped, do it here.
             if (videoFlipPage && (displayMode & DOUBLE_BUFFER))
             {
@@ -517,6 +539,7 @@ ISR(TIMER2_OVF_vect) {
                 displayBuffer = workBuffer;
                 workBuffer = temp;
             }
+#endif
 
             if (videoFlipTimer) {
                 videoFlipTimer = false;

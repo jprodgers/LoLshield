@@ -12,12 +12,16 @@
 #include <inttypes.h>
 
 #define SINGLE_BUFFER 0
-#define DOUBLE_BUFFER 1
-#define GRAYSCALE     2
+#define DOUBLE_BUFFER 1	    // comment out to save memory
+#define GRAYSCALE     2	    // comment out to save memory
 
 #define DISPLAY_COLS 14     // Number of columns in the display
 #define DISPLAY_ROWS 9      // Number of rows in the display
+#ifdef GRAYSCALE
 #define SHADES 8 // Number of distinct shades to display, including black, i.e. OFF
+#else
+#define SHADES 2
+#endif
 
 namespace LedSign
 {
