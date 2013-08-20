@@ -83,8 +83,6 @@ typedef struct timerInfo {
 timerInfo* frontTimer;
 timerInfo* backTimer;
 
-timerInfo* tempTimer;
-
 timerInfo timer[2];
 
 // Record a slow and fast prescaler for later use
@@ -354,30 +352,20 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 void LedSign::SetBrightness(uint8_t brightness)
 {
     // An exponential fit seems to approximate a (perceived) linear scale
-    float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
-    int difference = 0;
+    const float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
 
     /*   ---- This needs review! Please review. -- thilo  */
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
-    int start = 0;
-    int max = 255;
-    float scale = 1.5;
-    float delta = pow( max - start , 1.0 / scale) / (SHADES - 1);
-    uint8_t pageCounts[SHADES]; 
+    const int max = 255;
+    const float scale = 1.5;
+    const float delta = pow(max, 1.0 / scale) / (SHADES - 1);
+    int counts[SHADES]; 
+    uint8_t i;
 
-    pageCounts[0] = start;
-    for (uint8_t i=1; i<SHADES; i++)
-        pageCounts[i] = start + pow( i * delta, scale );
-
-    if (! initialized) {
-       // set front timer defaults
-        for (int i = 0; i < SHADES; i++) {
-            frontTimer->counts[i] = 255 - pageCounts[i];
-            // TODO: Generate this dynamically
-            frontTimer->prescaler[i] = slowPrescaler.TCCR2;
-        }
-    }
+    counts[0] = 0;
+    for (i=1; i<SHADES; i++)
+        counts[i] = pow(i * delta, scale) * brightnessPercent * fastPrescaler.relativeSpeed + 0.49999;
 
     // Wait until the previous brightness request goes through
     while( videoFlipTimer ) {
@@ -386,18 +374,19 @@ void LedSign::SetBrightness(uint8_t brightness)
 
     // Compute on time for each of the pages
     // Use the fast timer; slow timer is only useful for < 3 shades.
-    for (uint8_t i = 0; i < SHADES - 1; i++) {
-        int interval = brightnessPercent
-                       * (pageCounts[i + 1] - pageCounts[i])
-                       * fastPrescaler.relativeSpeed;
+    for (i = 0; i < SHADES - 1; i++) {
+        int interval = counts[i + 1] - counts[i];
         backTimer->counts[i] = 256 - (interval ? interval : 1);
         backTimer->prescaler[i] = fastPrescaler.TCCR2;
-	difference += 256 - backTimer->counts[i];
     }
 
     // Compute off time
-    backTimer->counts[SHADES - 1] = difference / fastPrescaler.relativeSpeed;
-    backTimer->prescaler[SHADES - 1] = slowPrescaler.TCCR2;
+    int interval = max - counts[i] / fastPrescaler.relativeSpeed;
+    backTimer->counts[i] = 256 - (interval ? interval : 1);
+    backTimer->prescaler[i] = slowPrescaler.TCCR2;
+
+    if (!initialized)
+        *frontTimer = *backTimer;
 
     /*   ---- End of "This needs review! Please review." -- thilo  */
 
@@ -531,9 +520,9 @@ ISR(TIMER2_OVF_vect) {
             if (videoFlipTimer) {
                 videoFlipTimer = false;
 
-                tempTimer = frontTimer;
+		timerInfo* temp = frontTimer;
                 frontTimer = backTimer;
-                backTimer = tempTimer;
+                backTimer = temp;
             }
 
 	    displayPointer = displayBuffer->pixels;
