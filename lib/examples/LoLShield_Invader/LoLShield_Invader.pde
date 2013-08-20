@@ -304,7 +304,6 @@ void setup()                    // run once, when the sketch starts
 {
   LedSign::Init();
   randomSeed(analogRead(2));  
-  Serial.begin(9600);
   
   initGame();
   drawShip();
