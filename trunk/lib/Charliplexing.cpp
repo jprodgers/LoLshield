@@ -43,7 +43,7 @@ volatile unsigned int LedSign::tcnt2;
 
 
 struct videoPage {
-    uint8_t pixels[SHADES][48];  // TODO: is 48 right?
+    uint8_t pixels[24*(SHADES-1)];
 }; 
 
 /* -----------------------------------------------------------------  */
@@ -63,6 +63,7 @@ volatile boolean videoFlipPage = false;
 
 /// Pointer to the buffer that is currently being displayed
 videoPage* displayBuffer;
+uint8_t* displayPointer;
 
 /// Pointer to the buffer that should currently be drawn to
 videoPage* workBuffer;
@@ -107,8 +108,8 @@ uint8_t statusPIN = 19;
 #endif
 
 typedef struct LEDPosition {
-    uint8_t high;
-    uint8_t low;
+    uint8_t mask;
+    uint8_t cycle;
 };
 
 
@@ -116,26 +117,28 @@ typedef struct LEDPosition {
 /** Table for LED Position in leds[] ram table
  */
 
+#define L(high, low)	{ _BV(high & 7), (low - 2) + ((high > 7) ? 12 : 0) }
 const LEDPosition ledMap[126] = {
-    {13, 5}, {13, 6}, {13, 7}, {13, 8}, {13, 9}, {13,10}, {13,11}, {13,12},
-    {13, 4}, { 4,13}, {13, 3}, { 3,13}, {13, 2}, { 2,13},
-    {12, 5}, {12, 6}, {12, 7}, {12, 8}, {12, 9}, {12,10}, {12,11}, {12,13},
-    {12, 4}, { 4,12}, {12, 3}, { 3,12}, {12, 2}, { 2,12},
-    {11, 5}, {11, 6}, {11, 7}, {11, 8}, {11, 9}, {11,10}, {11,12}, {11,13},
-    {11, 4}, { 4,11}, {11, 3}, { 3,11}, {11, 2}, { 2,11},
-    {10, 5}, {10, 6}, {10, 7}, {10, 8}, {10, 9}, {10,11}, {10,12}, {10,13},
-    {10, 4}, { 4,10}, {10, 3}, { 3,10}, {10, 2}, { 2,10},
-    { 9, 5}, { 9, 6}, { 9, 7}, { 9, 8}, { 9,10}, { 9,11}, { 9,12}, { 9,13},
-    { 9, 4}, { 4, 9}, { 9, 3}, { 3, 9}, { 9, 2}, { 2, 9},
-    { 8, 5}, { 8, 6}, { 8, 7}, { 8, 9}, { 8,10}, { 8,11}, { 8,12}, { 8,13},
-    { 8, 4}, { 4, 8}, { 8, 3}, { 3, 8}, { 8, 2}, { 2, 8},
-    { 7, 5}, { 7, 6}, { 7, 8}, { 7, 9}, { 7,10}, { 7,11}, { 7,12}, { 7,13},
-    { 7, 4}, { 4, 7}, { 7, 3}, { 3, 7}, { 7, 2}, { 2, 7},
-    { 6, 5}, { 6, 7}, { 6, 8}, { 6, 9}, { 6,10}, { 6,11}, { 6,12}, { 6,13},
-    { 6, 4}, { 4, 6}, { 6, 3}, { 3, 6}, { 6, 2}, { 2, 6},
-    { 5, 6}, { 5, 7}, { 5, 8}, { 5, 9}, { 5,10}, { 5,11}, { 5,12}, { 5,13},
-    { 5, 4}, { 4, 5}, { 5, 3}, { 3, 5}, { 5, 2}, { 2, 5},
+    L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
+    L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
+    L(12, 5), L(12, 6), L(12, 7), L(12, 8), L(12, 9), L(12,10), L(12,11), L(12,13),
+    L(12, 4), L( 4,12), L(12, 3), L( 3,12), L(12, 2), L( 2,12),
+    L(11, 5), L(11, 6), L(11, 7), L(11, 8), L(11, 9), L(11,10), L(11,12), L(11,13),
+    L(11, 4), L( 4,11), L(11, 3), L( 3,11), L(11, 2), L( 2,11),
+    L(10, 5), L(10, 6), L(10, 7), L(10, 8), L(10, 9), L(10,11), L(10,12), L(10,13),
+    L(10, 4), L( 4,10), L(10, 3), L( 3,10), L(10, 2), L( 2,10),
+    L( 9, 5), L( 9, 6), L( 9, 7), L( 9, 8), L( 9,10), L( 9,11), L( 9,12), L( 9,13),
+    L( 9, 4), L( 4, 9), L( 9, 3), L( 3, 9), L( 9, 2), L( 2, 9),
+    L( 8, 5), L( 8, 6), L( 8, 7), L( 8, 9), L( 8,10), L( 8,11), L( 8,12), L( 8,13),
+    L( 8, 4), L( 4, 8), L( 8, 3), L( 3, 8), L( 8, 2), L( 2, 8),
+    L( 7, 5), L( 7, 6), L( 7, 8), L( 7, 9), L( 7,10), L( 7,11), L( 7,12), L( 7,13),
+    L( 7, 4), L( 4, 7), L( 7, 3), L( 3, 7), L( 7, 2), L( 2, 7),
+    L( 6, 5), L( 6, 7), L( 6, 8), L( 6, 9), L( 6,10), L( 6,11), L( 6,12), L( 6,13),
+    L( 6, 4), L( 4, 6), L( 6, 3), L( 3, 6), L( 6, 2), L( 2, 6),
+    L( 5, 6), L( 5, 7), L( 5, 8), L( 5, 9), L( 5,10), L( 5,11), L( 5,12), L( 5,13),
+    L( 5, 4), L( 4, 5), L( 5, 3), L( 3, 5), L( 5, 2), L( 2, 5),
 };
+#undef L(high, low)
 
 
 /* -----------------------------------------------------------------  */
@@ -218,6 +221,7 @@ void LedSign::Init(uint8_t mode)
 
     // Point the display buffer to the first physical buffer
     displayBuffer = &leds[0];
+    displayPointer = displayBuffer->pixels;
 
     // If we are in single buffered mode, point the work buffer
     // at the same physical buffer as the display buffer.  Otherwise,
@@ -321,29 +325,20 @@ void LedSign::Vertical(int x, int set) {
  */
 void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 {
-    uint8_t pin_high = ledMap[x+y*14].high;
-    uint8_t pin_low  = ledMap[x+y*14].low;
-    // pin_low is directly the address in the led array (minus 2 because the 
-    // first two bytes are used for RS232 communication), but
-    // as it is a two byte array we need to check pin_high also.
-    // If pin_high is bigger than 8 address has to be increased by one
-
-    uint8_t bufferNum = (pin_low-2)*2 + (pin_high / 8) + ((pin_high > 7)?24:0);
-    uint8_t work = _BV(pin_high & 0x07);
-
     // If we aren't in grayscale mode, just map any pin brightness to max
     if (c > 0 && !(displayMode & GRAYSCALE)) {
         c = SHADES-1;
     }
 
-    for (int i = 0; i < SHADES-1; i++) {
-        if( c > i ) {
-            workBuffer->pixels[i][bufferNum] |= work;   // ON
-        }
-        else {
-            workBuffer->pixels[i][bufferNum] &= ~work;   // OFF
-        }
-    }
+    uint8_t mask = ledMap[x+y*14].mask;
+    uint8_t cycle = ledMap[x+y*14].cycle;
+
+    uint8_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
+    int i;
+    for (i = 0; i < c; i++)
+	*p++ |= mask;   // ON;
+    for (; i < SHADES-1; i++)
+	*p++ &= ~mask;   // OFF;
 }
 
 
@@ -355,27 +350,25 @@ void LedSign::SetBrightness(uint8_t brightness)
 {
     // An exponential fit seems to approximate a (perceived) linear scale
     float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
-    uint8_t difference = 0;
+    int difference = 0;
 
     /*   ---- This needs review! Please review. -- thilo  */
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
-    int start = 15;
+    int start = 0;
     int max = 255;
     float scale = 1.5;
     float delta = pow( max - start , 1.0 / scale) / (SHADES - 1);
     uint8_t pageCounts[SHADES]; 
 
-    pageCounts[0] = max - start;
-    for (uint8_t i=1; i<SHADES; i++) {
-        pageCounts[i] = max - ( pow( i * delta, scale ) + start );
-    }
-    Serial.end();
+    pageCounts[0] = start;
+    for (uint8_t i=1; i<SHADES; i++)
+        pageCounts[i] = start + pow( i * delta, scale );
 
     if (! initialized) {
        // set front timer defaults
         for (int i = 0; i < SHADES; i++) {
-            frontTimer->counts[i] = pageCounts[i];
+            frontTimer->counts[i] = 255 - pageCounts[i];
             // TODO: Generate this dynamically
             frontTimer->prescaler[i] = slowPrescaler.TCCR2;
         }
@@ -389,17 +382,16 @@ void LedSign::SetBrightness(uint8_t brightness)
     // Compute on time for each of the pages
     // Use the fast timer; slow timer is only useful for < 3 shades.
     for (uint8_t i = 0; i < SHADES - 1; i++) {
-        uint8_t interval = 255 - pageCounts[i];
-
-        backTimer->counts[i] = 255 -    brightnessPercent 
-                                      * interval 
-                                      * fastPrescaler.relativeSpeed;
+        int interval = brightnessPercent
+                       * (pageCounts[i + 1] - pageCounts[i])
+                       * fastPrescaler.relativeSpeed;
+        backTimer->counts[i] = 256 - (interval ? interval : 1);
         backTimer->prescaler[i] = fastPrescaler.TCCR2;
-        difference += backTimer->counts[i] - pageCounts[i];
+	difference += 256 - backTimer->counts[i];
     }
 
     // Compute off time
-    backTimer->counts[SHADES - 1] = 255 - difference;
+    backTimer->counts[SHADES - 1] = difference / fastPrescaler.relativeSpeed;
     backTimer->prescaler[SHADES - 1] = slowPrescaler.TCCR2;
 
     /*   ---- End of "This needs review! Please review." -- thilo  */
@@ -413,8 +405,6 @@ void LedSign::SetBrightness(uint8_t brightness)
 /** The Interrupt code goes here !  
  */
 ISR(TIMER2_OVF_vect) {
-        DDRD  = 0x0;
-        DDRB  = 0x0;
 #ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, HIGH);
 #endif
@@ -432,38 +422,36 @@ ISR(TIMER2_OVF_vect) {
     TCCR2B = frontTimer->prescaler[page];
     TCNT2 = frontTimer->counts[page];
 
-    if ( page < SHADES - 1) { 
-
-        if (cycle < 6) {
-            DDRD  = _BV(cycle+2) | displayBuffer->pixels[page][cycle*2];
-            PORTD =            displayBuffer->pixels[page][cycle*2];
-
-            DDRB  =            displayBuffer->pixels[page][cycle*2+1];
-            PORTB =            displayBuffer->pixels[page][cycle*2+1];
-        } else if (cycle < 12) {
-            DDRD =             displayBuffer->pixels[page][cycle*2];
-            PORTD =            displayBuffer->pixels[page][cycle*2];
-
-            DDRB  = _BV(cycle-6) | displayBuffer->pixels[page][cycle*2+1];
-            PORTB =            displayBuffer->pixels[page][cycle*2+1];      
-        } else if (cycle < 18) {
-            DDRD  = _BV(cycle+2-12) | displayBuffer->pixels[page][cycle*2];
-            PORTD =            displayBuffer->pixels[page][cycle*2];
-
-            DDRB  =            displayBuffer->pixels[page][cycle*2+1];
-            PORTB =            displayBuffer->pixels[page][cycle*2+1];
-        } else {
-            DDRD =             displayBuffer->pixels[page][cycle*2];
-            PORTD =            displayBuffer->pixels[page][cycle*2];
-
-            DDRB  = _BV(cycle-6-12) | displayBuffer->pixels[page][cycle*2+1];
-            PORTB =            displayBuffer->pixels[page][cycle*2+1];      
+    if ( page == 0 ) {
+        if (cycle == 0) {
+            PORTB =            0;
+        } else if (cycle == 12) {
+            PORTD =            0;
         }
     } 
-    else {
-        // Turn everything off
-        DDRD  = 0x0;
-        DDRB  = 0x0;
+
+    if (page < SHADES - 1) {
+        uint8_t x = *displayPointer++;
+        if (cycle < 6) {
+            DDRD  = _BV(cycle+2) | x;
+            PORTD =            x;
+            DDRB  =            0;
+        } else if (cycle < 12) {
+            DDRD =             x;
+            PORTD =            x;
+            DDRB  = _BV(cycle-6) | 0;
+        } else if (cycle < 18) {
+            DDRB  =            x;
+            PORTB =            x;
+            DDRD  = _BV(cycle+2-12) | 0;
+        } else {
+            DDRB  = _BV(cycle-6-12) | x;
+            PORTB =            x;
+            DDRD =             0;
+        }
+    } else {
+        DDRD = 0;
+        DDRB = 0;
     }
 
     page++;
@@ -471,28 +459,30 @@ ISR(TIMER2_OVF_vect) {
     if (page >= SHADES) {
         page = 0;
         cycle++;
-    }
 
-    if (cycle > 24) {
-        cycle = 0;
+        if (cycle >= 24) {
+            cycle = 0;
 
-        // If the page should be flipped, do it here.
-        if (videoFlipPage && (displayMode & DOUBLE_BUFFER))
-        {
-            // TODO: is this an atomic operation?
-            videoFlipPage = false;
+            // If the page should be flipped, do it here.
+            if (videoFlipPage && (displayMode & DOUBLE_BUFFER))
+            {
+                // TODO: is this an atomic operation?
+                videoFlipPage = false;
+    
+                videoPage* temp = displayBuffer;
+                displayBuffer = workBuffer;
+                workBuffer = temp;
+            }
 
-            videoPage* temp = displayBuffer;
-            displayBuffer = workBuffer;
-            workBuffer = temp;
-        }
+            if (videoFlipTimer) {
+                videoFlipTimer = false;
 
-        if (videoFlipTimer) {
-            videoFlipTimer = false;
+                tempTimer = frontTimer;
+                frontTimer = backTimer;
+                backTimer = tempTimer;
+            }
 
-            tempTimer = frontTimer;
-            frontTimer = backTimer;
-            backTimer = tempTimer;
+	    displayPointer = displayBuffer->pixels;
         }
     }
 
