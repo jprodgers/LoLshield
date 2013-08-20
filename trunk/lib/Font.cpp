@@ -151,7 +151,7 @@ uint8_t Font::Draw(unsigned char letter,int x,int y,int set) {
     if (
      charCol + x <14 && 
      charCol + x >=0 && 
-     charRow + y <8 && 
+     charRow + y <9 && 
      charRow + y >=0
     ) {
         LedSign::Set(charCol + x, charRow+y, set);
