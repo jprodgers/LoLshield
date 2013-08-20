@@ -100,7 +100,7 @@ static bool initialized = false;
 
 /// Uncomment to set analog pin 5 high during interrupts, so that an
 /// oscilloscope can be used to measure the processor time taken by it
-#define MEASURE_ISR_TIME
+#undef MEASURE_ISR_TIME
 #ifdef MEASURE_ISR_TIME
 uint8_t statusPIN = 19;
 #endif
