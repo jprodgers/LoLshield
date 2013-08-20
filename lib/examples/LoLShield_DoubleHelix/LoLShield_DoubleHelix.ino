@@ -52,7 +52,7 @@ float barPhase = 0.0;
 
 // This function is called once, when the sketch starts.
 void setup() {
-  LedSign::Init(GRAYSCALE); // Initializes a grayscale frame buffer.
+  LedSign::Init(DOUBLE_BUFFER | GRAYSCALE); // Initializes a grayscale frame buffer.
 }
 
 
@@ -130,6 +130,5 @@ void loop() {
     }
   }
   
-  // Wait between frames to slow down the animation.
-  delay( 20 );
+  LedSign::Flip(true);
 }
