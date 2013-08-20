@@ -199,7 +199,7 @@ uint8_t Font::Draw90(unsigned char letter,int x,int y,int set) {
     if (
      charRow + x <14 && 
      charRow + x >=0 && 
-     charCol + y <8 && 
+     charCol + y <9 && 
      charCol + y >=0
     ) {
         LedSign::Set(7 - charRow + x, charCol + y, set);
