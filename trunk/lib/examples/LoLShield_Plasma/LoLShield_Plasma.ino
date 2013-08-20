@@ -29,7 +29,7 @@ float colorStretch = 0.11;    // Higher numbers will produce tighter color bands
 
 // This function is called once, when the sketch starts.
 void setup() {
-  LedSign::Init(GRAYSCALE);
+  LedSign::Init(DOUBLE_BUFFER | GRAYSCALE);
 }
 
 
@@ -78,7 +78,6 @@ void loop() {
     }
   }
   
-  // There's so much math happening, it's already a bit slow ;) No need for extra delays!
-  //delay( 20 );
+  LedSign::Flip(true);
 }
 
