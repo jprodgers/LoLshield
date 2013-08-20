@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 #include "Charliplexing.h"
 
 volatile unsigned int LedSign::tcnt2;
@@ -106,8 +107,8 @@ uint8_t statusPIN = 19;
 #endif
 
 typedef struct LEDPosition {
-    uint8_t mask;
-    uint8_t cycle;
+    prog_uchar mask;
+    prog_uchar cycle;
 };
 
 
@@ -121,7 +122,7 @@ typedef struct LEDPosition {
 #define	P(pin)	(pin)
 #endif
 #define L(high, low)	{ _BV(P(high) & 7), (P(low) - 2) + ((P(high) > 7) ? 12 : 0) }
-const LEDPosition ledMap[126] = {
+PROGMEM const LEDPosition ledMap[126] = {
     L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
     L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
     L(12, 5), L(12, 6), L(12, 7), L(12, 8), L(12, 9), L(12,10), L(12,11), L(12,13),
@@ -333,8 +334,8 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
         c = SHADES-1;
     }
 
-    uint8_t mask = ledMap[x+y*14].mask;
-    uint8_t cycle = ledMap[x+y*14].cycle;
+    uint8_t mask = pgm_read_byte_near(&ledMap[x+y*14].mask);
+    uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*14].cycle);
 
     uint8_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
     int i;
