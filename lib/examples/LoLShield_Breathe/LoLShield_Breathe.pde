@@ -35,7 +35,7 @@ void setup()                    // run once, when the sketch starts
 void loop()                     // run over and over again
 { 
     // inhale
-    for (int8_t i=0; i <= SHADES; i++) {
+    for (int8_t i=0; i <= SHADES-1; i++) {
         uint8_t sleep =   inhale_time_ms / SHADES 
                         + ( SHADES / 2 - i ) * ( inhale_time_ms / (SHADES * 6) );
         LedSign::Clear(i);
@@ -45,7 +45,7 @@ void loop()                     // run over and over again
     delay( hold_breath_ms );
 
     // exhale
-    for (int8_t i=SHADES; i >= 0; i--) {
+    for (int8_t i=SHADES-1; i >= 0; i--) {
         uint8_t sleep =   exhale_time_ms / SHADES 
                         + ( SHADES / 2 - i ) * ( inhale_time_ms / (SHADES * 6) );
         LedSign::Clear(i);
