@@ -117,7 +117,12 @@ typedef struct LEDPosition {
 /** Table for LED Position in leds[] ram table
  */
 
-#define L(high, low)	{ _BV(high & 7), (low - 2) + ((high > 7) ? 12 : 0) }
+#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
+#define	P(pin)  ((pin < 5) ? (pin + 1) : (pin == 5) ? (2) : (pin))
+#else
+#define	P(pin)	(pin)
+#endif
+#define L(high, low)	{ _BV(P(high) & 7), (P(low) - 2) + ((P(high) > 7) ? 12 : 0) }
 const LEDPosition ledMap[126] = {
     L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
     L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
@@ -154,7 +159,7 @@ void LedSign::Init(uint8_t mode)
 
 	float prescaler = 0.0;
 	
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
 	TIMSK2 &= ~(1<<TOIE2);
 	TCCR2A &= ~((1<<WGM21) | (1<<WGM20));
 	TCCR2B &= ~(1<<WGM22);
@@ -246,7 +251,7 @@ void LedSign::Init(uint8_t mode)
 
     // Then start the display
 	TCNT2 = tcnt2;
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || (__AVR_ATmega1280__)
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
 	TIMSK2 |= (1<<TOIE2);
 #elif defined (__AVR_ATmega128__) || defined (__AVR_ATmega8__)
 	TIMSK |= (1<<TOIE2);
@@ -422,7 +427,55 @@ ISR(TIMER2_OVF_vect) {
     TCCR2B = frontTimer->prescaler[page];
     TCNT2 = frontTimer->counts[page];
 
-    if ( page == 0 ) {
+#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
+    // Pins on the Arduino MEGA 1280/2560 are mapped to different ports on the microcontroller
+    // than other board types. Need to remap the bits in displayBuffer to the correct pins.
+    // In this case, used ports have un-used pins. To allow these pins to be used,
+    // their state is preserved when writing to the ports.
+    uint8_t pinDirLo, pinDirHi, pinDataLo, pinDataHi;
+
+    // Turn everything off
+    DDRE &= ~0x38;
+    DDRG &= ~0x20;
+    DDRH &= ~0x78;
+    DDRB &= ~0xf0;
+
+    if (page < SHADES - 1) {
+        uint8_t x = *displayPointer++;
+
+        if (cycle < 6) {
+            pinDirLo = _BV(cycle+2) | x;
+            pinDataLo = x;
+            pinDirHi =                0;
+            pinDataHi = 0;
+        } else if (cycle < 12) {
+            pinDirLo =                x;
+            pinDataLo = x;
+            pinDirHi = _BV(cycle-6) | 0;
+            pinDataHi = 0;
+        } else if (cycle < 18) {
+            pinDirLo = _BV(cycle+2-12) | 0;
+            pinDataLo = 0;
+            pinDirHi =                   x;
+            pinDataHi = x;
+        } else {
+            pinDirLo =                   0;
+            pinDataLo = 0;
+            pinDirHi = _BV(cycle-6-12) | x;
+            pinDataHi = x;
+        }
+
+        PORTE = (PORTE & (~0x38)) | ((pinDataLo << 1) & 0x38);
+        PORTG = (PORTG & (~0x20)) | ((pinDataLo << 0) & 0x20);
+        PORTH = (PORTH & (~0x78)) | ((pinDataLo >> 3) & 0x18) | ((pinDataHi << 5) & 0x60);
+        PORTB = (PORTB & (~0xf0)) | ((pinDataHi << 2) & 0xf0);
+        DDRE |= ((pinDirLo << 1) & 0x38);
+        DDRG |= ((pinDirLo << 0) & 0x20);
+        DDRH |= ((pinDirLo >> 3) & 0x18) | ((pinDirHi << 5) & 0x60);
+        DDRB |= ((pinDirHi << 2) & 0xf0);
+    }
+#else
+    if (page == 0) {
         if (cycle == 0) {
             PORTB =            0;
         } else if (cycle == 12) {
@@ -453,6 +506,7 @@ ISR(TIMER2_OVF_vect) {
         DDRD = 0;
         DDRB = 0;
     }
+#endif
 
     page++;
 
