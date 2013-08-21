@@ -48,21 +48,18 @@ void setup()                    // run once, when the sketch starts
  */
 void loop()                     // run over and over again
 {
+    const char test[]="HELLO WORLD!   ";
 
-char test[]="HELLO WORLD   !     ";
-
-    int8_t x=0,x2=0;
-  for(int8_t j=13;j>-100;j--) {
-    x=j;
-    LedSign::Clear();
-    for(int i=0;i<17;i++) {
-      x2=Font::Draw(test[i],x,0);
-      x+=x2;
-      if (x>=13) break;
-    }  
-    delay(80);
-  }
-  delay(3000);
+    for (int8_t x=DISPLAY_COLS, i=0;;) {
+	LedSign::Clear();
+	x--;
+        for (int8_t x2=0, i2=0; x+x2<DISPLAY_COLS;) {
+	    int8_t w = Font::Draw(test[(i+i2)%strlen(test)], x+x2, 0);
+	    if (x+x2+w < 0)	// off the display completely?
+		x += w, i++;
+	    else
+		x2 += w, i2++;
+	}
+        delay(80);
+    }
 }
-
-
