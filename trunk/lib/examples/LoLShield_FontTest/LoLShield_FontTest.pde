@@ -53,12 +53,11 @@ void loop()                     // run over and over again
     for (int8_t x=DISPLAY_COLS, i=0;;) {
 	LedSign::Clear();
 	x--;
-        for (int8_t x2=0, i2=0; x+x2<DISPLAY_COLS;) {
-	    int8_t w = Font::Draw(test[(i+i2)%strlen(test)], x+x2, 0);
-	    if (x+x2+w < 0)	// off the display completely?
-		x += w, i++;
-	    else
-		x2 += w, i2++;
+        for (int8_t x2=x, i2=i; x2<DISPLAY_COLS;) {
+	    int8_t w = Font::Draw(test[i2], x2, 0);
+	    x2 += w, i2 = (i2+1)%strlen(test);
+	    if (x2 <= 0)	// off the display completely?
+		x = x2, i = i2;
 	}
         delay(80);
     }
