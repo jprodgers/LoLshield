@@ -32,89 +32,76 @@
                               //Initialized in setup.
 
 #define DELAY 150             //Sets the time each generation is shown
-#define RESEEDRATE 5000       //Sets the rate the world is re-seeded
-#define SIZEX 14              //Sets the X axis size
-#define SIZEY 9               //Sets the Y axis size
-byte world[SIZEX][SIZEY][2];  //Creates a double buffer world
+#define RESEEDRATE 100        //Sets the rate the world is re-seeded
+#define SIZEX DISPLAY_COLS    //Sets the X axis size
+#define SIZEY DISPLAY_ROWS    //Sets the Y axis size
+byte world[2][SIZEX][SIZEY];  //Creates a double buffer world
 long density = 50;            //Sets density % during seeding
 int geck = 0;                 //Counter for re-seeding
 
 void setup() {
   LedSign::Init();            //Initilizes the LoL Shield
-  randomSeed(analogRead(5));
-  //Builds the world with an initial seed.
-  for (int i = 0; i < SIZEX; i++) {
-    for (int j = 0; j < SIZEY; j++) {
-      if (random(100) < density) {
-        world[i][j][0] = 1;
-      }
-      else {
-        world[i][j][0] = 0;
-      }
-      world[i][j][1] = 0;
-    }
-  }
+  seedWorld();
 }
 
 void loop() {
   // Birth and death cycle 
-  for (int x = 0; x < SIZEX; x++) { 
-    for (int y = 0; y < SIZEY; y++) {
+  for (byte x = 0; x < SIZEX; x++) { 
+    for (byte y = 0; y < SIZEY; y++) {
       // Default is for cell to stay the same
-      world[x][y][1] = world[x][y][0];
-      int count = neighbours(x, y); 
-      geck++;
-      if (count == 3 && world[x][y][0] == 0) {
-        // A new cell is born
-        world[x][y][1] = 1; 
-        LedSign::Set(x,y,1);
-      } 
-      else if ((count < 2 || count > 3) && world[x][y][0] == 1) {
-        // Cell dies
-        world[x][y][1] = 0;
-        LedSign::Set(x,y,0);
-      }
-    }
+      byte alive = world[0][x][y];
+      LedSign::Set(x, y, alive);
 
+      byte count = neighbours(x, y); 
+      if (count == 3 && !alive) {
+        // A new cell is born
+        alive = 1; 
+      } else if ((count < 2 || count > 3) && alive) {
+        // Cell dies
+        alive = 0;
+      }
+      world[1][x][y] = alive;
+    }
   }
   
-  //Counts and then checks for re-seeding
-  //Otherwise the display will die out at some point
-  geck++;
-  if (geck > RESEEDRATE){
-    seedWorld();
-    geck = 0;
-  }
-
   // Copy next generation into place
-  for (int x = 0; x < SIZEX; x++) { 
-    for (int y = 0; y < SIZEY; y++) {
-      world[x][y][0] = world[x][y][1];
+  for (byte x = 0; x < SIZEX; x++) { 
+    for (byte y = 0; y < SIZEY; y++) {
+      world[0][x][y] = world[1][x][y];
     }
   }
+
+  //Counts and then checks for re-seeding
+  //Otherwise the display will die out at some point
+  if (++geck >= RESEEDRATE){
+    geck = 0;
+    seedWorld();
+  }
+
   delay(DELAY);
 }
 
 //Re-seeds based off of RESEEDRATE
 void seedWorld(){
   randomSeed(analogRead(5));
-  for (int i = 0; i < SIZEX; i++) {
-    for (int j = 0; j < SIZEY; j++) {
-      if (random(100) < density) {
-        world[i][j][1] = 1;
-      }
+  for (byte i = 0; i < SIZEX; i++) {
+    for (byte j = 0; j < SIZEY; j++) {
+      if (random(100) < density)
+        world[0][i][j] = 1;
+      else
+        world[0][i][j] = 0;
     } 
   }
 }
 
 //Runs the rule checks, including screen wrap
-int neighbours(int x, int y) {
-  return world[(x + 1) % SIZEX][y][0] + 
-    world[x][(y + 1) % SIZEY][0] + 
-    world[(x + SIZEX - 1) % SIZEX][y][0] + 
-    world[x][(y + SIZEY - 1) % SIZEY][0] + 
-    world[(x + 1) % SIZEX][(y + 1) % SIZEY][0] + 
-    world[(x + SIZEX - 1) % SIZEX][(y + 1) % SIZEY][0] + 
-    world[(x + SIZEX - 1) % SIZEX][(y + SIZEY - 1) % SIZEY][0] + 
-    world[(x + 1) % SIZEX][(y + SIZEY - 1) % SIZEY][0]; 
+byte neighbours(byte x, byte y) {
+  return world[0][(x + 1) % SIZEX][y] + 
+    world[0][x][(y + 1) % SIZEY] + 
+    world[0][(x + SIZEX - 1) % SIZEX][y] + 
+    world[0][x][(y + SIZEY - 1) % SIZEY] + 
+    world[0][(x + 1) % SIZEX][(y + 1) % SIZEY] + 
+    world[0][(x + SIZEX - 1) % SIZEX][(y + 1) % SIZEY] + 
+    world[0][(x + SIZEX - 1) % SIZEX][(y + SIZEY - 1) % SIZEY] + 
+    world[0][(x + 1) % SIZEX][(y + SIZEY - 1) % SIZEY];
 }
