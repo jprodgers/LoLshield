@@ -40,11 +40,9 @@
 #include <avr/pgmspace.h>
 #include "Charliplexing.h"
 
-volatile unsigned int LedSign::tcnt2;
-
 
 struct videoPage {
-    uint8_t pixels[24*(SHADES-1)];
+    uint16_t pixels[12*(SHADES-1)];
 }; 
 
 /* -----------------------------------------------------------------  */
@@ -70,7 +68,7 @@ volatile boolean videoFlipPage = false;
 
 /// Pointer to the buffer that is currently being displayed
 videoPage* displayBuffer;
-uint8_t* displayPointer;
+uint16_t* displayPointer;
 
 /// Pointer to the buffer that should currently be drawn to
 videoPage* workBuffer;
@@ -95,13 +93,10 @@ timerInfo timer[2];
 // Record a slow and fast prescaler for later use
 typedef struct prescalerInfo {
     uint8_t relativeSpeed;
-    uint8_t TCCR2;
+    uint8_t tccr2;
 };
 
-// TODO: Generate these based on processor type and clock speed
-prescalerInfo slowPrescaler = {1, 0x03};
-//prescalerInfo fastPrescaler = {32, 0x01};
-prescalerInfo fastPrescaler = {4, 0x02};
+prescalerInfo slowPrescaler, fastPrescaler;
 
 static bool initialized = false;
 
@@ -113,7 +108,7 @@ uint8_t statusPIN = 19;
 #endif
 
 typedef struct LEDPosition {
-    prog_uchar mask;
+    prog_uchar high;
     prog_uchar cycle;
 };
 
@@ -127,7 +122,7 @@ typedef struct LEDPosition {
 #else
 #define	P(pin)	(pin)
 #endif
-#define L(high, low)	{ _BV(P(high) & 7), (P(low) - 2) + ((P(high) > 7) ? 12 : 0) }
+#define L(high, low)	{ P(high), (P(low) - 2) }
 PROGMEM const LEDPosition ledMap[126] = {
     L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
     L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
@@ -162,68 +157,42 @@ void LedSign::Init(uint8_t mode)
     digitalWrite(statusPIN, LOW);
 #endif
 
-	float prescaler = 0.0;
-	
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
-	TIMSK2 &= ~(1<<TOIE2);
-	TCCR2A &= ~((1<<WGM21) | (1<<WGM20));
-	TCCR2B &= ~(1<<WGM22);
-	ASSR &= ~(1<<AS2);
-	TIMSK2 &= ~(1<<OCIE2A);
-	
-	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
-		TCCR2B |= ((1<<CS21) | (1<<CS20));
-		TCCR2B &= ~(1<<CS22);
-		prescaler = 32.0;
-	} else if (F_CPU < 1000000UL) {	// prescaler set to 8
-		TCCR2B |= (1<<CS21);
-		TCCR2B &= ~((1<<CS22) | (1<<CS20));
-		prescaler = 8.0;
-	} else { // F_CPU > 16Mhz, prescaler set to 128
-		TCCR2B |= (1<<CS22);
-		TCCR2B &= ~((1<<CS21) | (1<<CS20));
-		prescaler = 64.0;
-	}
+	TIMSK2 &= ~(_BV(TOIE2) | _BV(OCIE2A));
+	TCCR2A &= ~(_BV(WGM21) | _BV(WGM20));
+	TCCR2B &= ~_BV(WGM22);
+	ASSR &= ~_BV(AS2);
 #elif defined (__AVR_ATmega8__)
-	TIMSK &= ~(1<<TOIE2);
-	TCCR2 &= ~((1<<WGM21) | (1<<WGM20));
-	TIMSK &= ~(1<<OCIE2);
-	ASSR &= ~(1<<AS2);
-	
-	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
-		TCCR2 |= (1<<CS22);
-		TCCR2 &= ~((1<<CS21) | (1<<CS20));
-		prescaler = 64.0;
-	} else if (F_CPU < 1000000UL) {	// prescaler set to 8
-		TCCR2 |= (1<<CS21);
-		TCCR2 &= ~((1<<CS22) | (1<<CS20));
-		prescaler = 8.0;
-	} else { // F_CPU > 16Mhz, prescaler set to 128
-		TCCR2 |= ((1<<CS22) && (1<<CS20));
-		TCCR2 &= ~(1<<CS21);
-		prescaler = 128.0;
-	}
+	TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
+	TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
+	ASSR &= ~_BV(AS2);
 #elif defined (__AVR_ATmega128__)
-	TIMSK &= ~(1<<TOIE2);
-	TCCR2 &= ~((1<<WGM21) | (1<<WGM20));
-	TIMSK &= ~(1<<OCIE2);
+	TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
+	TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
+#endif
 	
-	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
-		TCCR2 |= ((1<<CS21) | (1<<CS20));
-		TCCR2 &= ~(1<<CS22);
-		prescaler = 64.0;
-	} else if (F_CPU < 1000000UL) {	// prescaler set to 8
-		TCCR2 |= (1<<CS21);
-		TCCR2 &= ~((1<<CS22) | (1<<CS20));
-		prescaler = 8.0;
-	} else { // F_CPU > 16Mhz, prescaler set to 256
-		TCCR2 |= (1<<CS22);
-		TCCR2 &= ~((1<<CS21) | (1<<CS20));
-		prescaler = 256.0;
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
+        if (F_CPU < 8000000UL) {
+                fastPrescaler.tccr2 = _BV(CS20);		// 1
+                slowPrescaler.tccr2 = _BV(CS21);		// 8
+                fastPrescaler.relativeSpeed = 8;
+        } else { // F_CPU >= 8Mhz, prescaler set to 8
+                fastPrescaler.tccr2 = _BV(CS21);		// 8
+                slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 32
+                fastPrescaler.relativeSpeed = 4;
+        }
+#elif defined (__AVR_ATmega128__)
+        if (F_CPU < 8000000UL) {	// prescaler set to 8
+                fastPrescaler.tccr2 = _BV(CS20);		// 1
+                slowPrescaler.tccr2 = _BV(CS21);		// 8
+                fastPrescaler.relativeSpeed = 8;
+        } else { // F_CPU >= 8Mhz, prescaler set to 8
+                fastPrescaler.tccr2 = _BV(CS21);		// 8
+                slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 64
+                fastPrescaler.relativeSpeed = 8;
 	}
 #endif
-
-	tcnt2 = 256 - (int)((float)F_CPU * 0.0005 / prescaler);
+    slowPrescaler.relativeSpeed = 1;
 
     // Record whether we are in single or double buffer mode
     displayMode = mode;
@@ -262,12 +231,14 @@ void LedSign::Init(uint8_t mode)
 #endif
 
     // Then start the display
-	TCNT2 = tcnt2;
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
 	TIMSK2 |= (1<<TOIE2);
-#elif defined (__AVR_ATmega128__) || defined (__AVR_ATmega8__)
+        TCCR2B = fastPrescaler.tccr2;
+#elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
 	TIMSK |= (1<<TOIE2);
+        TCCR2 = fastPrescaler.tccr2;
 #endif
+	TCNT2 = 255;	// interrupt ASAP
 
 #ifdef DOUBLE_BUFFER
     // If we are in double-buffer mode, wait until the display flips before we
@@ -355,10 +326,10 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
         c = SHADES-1;
 #endif
 
-    uint8_t mask = pgm_read_byte_near(&ledMap[x+y*14].mask);
+    uint16_t mask = 1 << pgm_read_byte_near(&ledMap[x+y*14].high);
     uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*14].cycle);
 
-    uint8_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
+    uint16_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
     int i;
     for (i = 0; i < c; i++)
 	*p++ |= mask;   // ON;
@@ -399,13 +370,13 @@ void LedSign::SetBrightness(uint8_t brightness)
     for (i = 0; i < SHADES - 1; i++) {
         int interval = counts[i + 1] - counts[i];
         backTimer->counts[i] = 256 - (interval ? interval : 1);
-        backTimer->prescaler[i] = fastPrescaler.TCCR2;
+        backTimer->prescaler[i] = fastPrescaler.tccr2;
     }
 
     // Compute off time
     int interval = max - counts[i] / fastPrescaler.relativeSpeed;
     backTimer->counts[i] = 256 - (interval ? interval : 1);
-    backTimer->prescaler[i] = slowPrescaler.TCCR2;
+    backTimer->prescaler[i] = slowPrescaler.tccr2;
 
     if (!initialized)
         *frontTimer = *backTimer;
@@ -435,87 +406,46 @@ ISR(TIMER2_OVF_vect) {
     // SHADES pages to display
     static uint8_t page = 0;
 
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
     TCCR2B = frontTimer->prescaler[page];
+#elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
+    TCCR2 = frontTimer->prescaler[page];
+#endif
     TCNT2 = frontTimer->counts[page];
 
 #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
-    // Pins on the Arduino MEGA 1280/2560 are mapped to different ports on the microcontroller
-    // than other board types. Need to remap the bits in displayBuffer to the correct pins.
-    // In this case, used ports have un-used pins. To allow these pins to be used,
-    // their state is preserved when writing to the ports.
-    uint8_t pinDirLo, pinDirHi, pinDataLo, pinDataHi;
-
     // Turn everything off
     DDRE &= ~0x38;
     DDRG &= ~0x20;
     DDRH &= ~0x78;
     DDRB &= ~0xf0;
 
+    // Pins on the Arduino MEGA 1280/2560 are mapped to different ports on the microcontroller
+    // than other board types. Need to remap the bits in displayBuffer to the correct pins.
+    // In this case, used ports have un-used pins. To allow these pins to be used,
+    // their state is preserved when writing to the ports.
     if (page < SHADES - 1) {
-        uint8_t x = *displayPointer++;
-
-        if (cycle < 6) {
-            pinDirLo = _BV(cycle+2) | x;
-            pinDataLo = x;
-            pinDirHi =                0;
-            pinDataHi = 0;
-        } else if (cycle < 12) {
-            pinDirLo =                x;
-            pinDataLo = x;
-            pinDirHi = _BV(cycle-6) | 0;
-            pinDataHi = 0;
-        } else if (cycle < 18) {
-            pinDirLo = _BV(cycle+2-12) | 0;
-            pinDataLo = 0;
-            pinDirHi =                   x;
-            pinDataHi = x;
-        } else {
-            pinDirLo =                   0;
-            pinDataLo = 0;
-            pinDirHi = _BV(cycle-6-12) | x;
-            pinDataHi = x;
-        }
-
-        PORTE = (PORTE & (~0x38)) | ((pinDataLo << 1) & 0x38);
-        PORTG = (PORTG & (~0x20)) | ((pinDataLo << 0) & 0x20);
-        PORTH = (PORTH & (~0x78)) | ((pinDataLo >> 3) & 0x18) | ((pinDataHi << 5) & 0x60);
-        PORTB = (PORTB & (~0xf0)) | ((pinDataHi << 2) & 0xf0);
-        DDRE |= ((pinDirLo << 1) & 0x38);
-        DDRG |= ((pinDirLo << 0) & 0x20);
-        DDRH |= ((pinDirLo >> 3) & 0x18) | ((pinDirHi << 5) & 0x60);
-        DDRB |= ((pinDirHi << 2) & 0xf0);
+        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
+        PORTE = (PORTE & (~0x38)) | ((data << 1) & 0x38);
+        PORTG = (PORTG & (~0x20)) | ((data << 0) & 0x20);
+        PORTH = (PORTH & (~0x78)) | ((data >> 3) & 0x78);
+        PORTB = (PORTB & (~0xf0)) | ((data >> 6) & 0xf0);
+        DDRE |= ((dir << 1) & 0x38);
+        DDRG |= ((dir << 0) & 0x20);
+        DDRH |= ((dir >> 3) & 0x78);
+        DDRB |= ((dir >> 6) & 0xf0);
     }
 #else
-    if (page == 0) {
-        if (cycle == 0) {
-            PORTB =            0;
-        } else if (cycle == 12) {
-            PORTD =            0;
-        }
-    } 
+    // Turn everything off
+    DDRD = 0;
+    DDRB = 0;
 
     if (page < SHADES - 1) {
-        uint8_t x = *displayPointer++;
-        if (cycle < 6) {
-            DDRD  = _BV(cycle+2) | x;
-            PORTD =            x;
-            DDRB  =            0;
-        } else if (cycle < 12) {
-            DDRD =             x;
-            PORTD =            x;
-            DDRB  = _BV(cycle-6) | 0;
-        } else if (cycle < 18) {
-            DDRB  =            x;
-            PORTB =            x;
-            DDRD  = _BV(cycle+2-12) | 0;
-        } else {
-            DDRB  = _BV(cycle-6-12) | x;
-            PORTB =            x;
-            DDRD =             0;
-        }
-    } else {
-        DDRD = 0;
-        DDRB = 0;
+        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
+        DDRD  = dir;
+        PORTD = data;
+        DDRB  = (dir >> 8);
+	PORTB = (data >> 8);
     }
 #endif
 
@@ -525,7 +455,7 @@ ISR(TIMER2_OVF_vect) {
         page = 0;
         cycle++;
 
-        if (cycle >= 24) {
+        if (cycle >= 12) {
             cycle = 0;
 
 #ifdef DOUBLE_BUFFER
