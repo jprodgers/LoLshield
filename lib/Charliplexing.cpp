@@ -158,39 +158,39 @@ void LedSign::Init(uint8_t mode)
 #endif
 
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
-	TIMSK2 &= ~(_BV(TOIE2) | _BV(OCIE2A));
-	TCCR2A &= ~(_BV(WGM21) | _BV(WGM20));
-	TCCR2B &= ~_BV(WGM22);
-	ASSR &= ~_BV(AS2);
+    TIMSK2 &= ~(_BV(TOIE2) | _BV(OCIE2A));
+    TCCR2A &= ~(_BV(WGM21) | _BV(WGM20));
+    TCCR2B &= ~_BV(WGM22);
+    ASSR &= ~_BV(AS2);
 #elif defined (__AVR_ATmega8__)
-	TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
-	TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
-	ASSR &= ~_BV(AS2);
+    TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
+    TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
+    ASSR &= ~_BV(AS2);
 #elif defined (__AVR_ATmega128__)
-	TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
-	TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
+    TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
+    TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
 #endif
 	
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
-        if (F_CPU < 8000000UL) {
-                fastPrescaler.tccr2 = _BV(CS20);		// 1
-                slowPrescaler.tccr2 = _BV(CS21);		// 8
-                fastPrescaler.relativeSpeed = 8;
-        } else { // F_CPU >= 8Mhz, prescaler set to 8
-                fastPrescaler.tccr2 = _BV(CS21);		// 8
-                slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 32
-                fastPrescaler.relativeSpeed = 4;
-        }
+    if (F_CPU < 8000000UL) {
+        fastPrescaler.tccr2 = _BV(CS20);		// 1
+        slowPrescaler.tccr2 = _BV(CS21);		// 8
+        fastPrescaler.relativeSpeed = 8;
+    } else { // F_CPU >= 8Mhz, prescaler set to 8
+        fastPrescaler.tccr2 = _BV(CS21);		// 8
+        slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 32
+        fastPrescaler.relativeSpeed = 4;
+    }
 #elif defined (__AVR_ATmega128__)
-        if (F_CPU < 8000000UL) {	// prescaler set to 8
-                fastPrescaler.tccr2 = _BV(CS20);		// 1
-                slowPrescaler.tccr2 = _BV(CS21);		// 8
-                fastPrescaler.relativeSpeed = 8;
-        } else { // F_CPU >= 8Mhz, prescaler set to 8
-                fastPrescaler.tccr2 = _BV(CS21);		// 8
-                slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 64
-                fastPrescaler.relativeSpeed = 8;
-	}
+    if (F_CPU < 8000000UL) {	// prescaler set to 8
+        fastPrescaler.tccr2 = _BV(CS20);		// 1
+        slowPrescaler.tccr2 = _BV(CS21);		// 8
+        fastPrescaler.relativeSpeed = 8;
+    } else { // F_CPU >= 8Mhz, prescaler set to 8
+        fastPrescaler.tccr2 = _BV(CS21);		// 8
+        slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 64
+        fastPrescaler.relativeSpeed = 8;
+    }
 #endif
     slowPrescaler.relativeSpeed = 1;
 
@@ -232,13 +232,13 @@ void LedSign::Init(uint8_t mode)
 
     // Then start the display
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
-	TIMSK2 |= (1<<TOIE2);
-        TCCR2B = fastPrescaler.tccr2;
+    TIMSK2 |= _BV(TOIE2);
+    TCCR2B = fastPrescaler.tccr2;
 #elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
-	TIMSK |= (1<<TOIE2);
-        TCCR2 = fastPrescaler.tccr2;
+    TIMSK |= _BV(TOIE2);
+    TCCR2 = fastPrescaler.tccr2;
 #endif
-	TCNT2 = 255;	// interrupt ASAP
+    TCNT2 = 255;	// interrupt ASAP
 
 #ifdef DOUBLE_BUFFER
     // If we are in double-buffer mode, wait until the display flips before we
