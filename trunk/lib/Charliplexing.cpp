@@ -108,8 +108,8 @@ uint8_t statusPIN = 19;
 #endif
 
 typedef struct LEDPosition {
-    prog_uchar high;
-    prog_uchar cycle;
+    uint8_t high;
+    uint8_t cycle;
 };
 
 
@@ -123,7 +123,7 @@ typedef struct LEDPosition {
 #define	P(pin)	(pin)
 #endif
 #define L(high, low)	{ P(high), (P(low) - 2) }
-PROGMEM const LEDPosition ledMap[126] = {
+const LEDPosition PROGMEM ledMap[126] = {
     L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
     L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
     L(12, 5), L(12, 6), L(12, 7), L(12, 8), L(12, 9), L(12,10), L(12,11), L(12,13),

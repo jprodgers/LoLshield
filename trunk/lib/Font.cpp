@@ -28,47 +28,47 @@
 #include "Charliplexing.h"
 #include <inttypes.h>
 
-prog_uchar letters_71[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,7, 2,1, 2,4, 2,7, 3,1, 3,2, 3,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_83[] PROGMEM = { 0,2, 0,3, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,5, 3,6, 9,9 };
-prog_uchar letters_67[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,1, 3,7, 9,9 };
-prog_uchar letters_76[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,7, 2,7, 3,7, 9,9 };
-prog_uchar letters_89[] PROGMEM = { 0,1, 0,2, 1,3, 2,4, 2,5, 2,6, 2,7, 3,3, 4,1, 4,2, 9,9 };
-prog_uchar letters_82[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 2,5, 3,1, 3,4, 3,6, 4,2, 4,3, 4,7, 9,9 };
-prog_uchar letters_79[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
-prog_uchar letters_33[] PROGMEM = { 1,1, 1,2, 1,3, 1,4, 1,5, 1,7, 9,9 };
-prog_uchar letters_65[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_87[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,6, 2,5, 3,6, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
-prog_uchar letters_69[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 9,9 };
-prog_uchar letters_80[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,2, 3,3, 9,9 };
-prog_uchar letters_50[] PROGMEM = { 0,2, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,7, 9,9 };
-prog_uchar letters_49[] PROGMEM = { 1,2, 1,7, 2,1, 2,2, 2,3, 2,4, 2,5, 2,6, 2,7, 3,7, 9,9 };
-prog_uchar letters_74[] PROGMEM = { 0,7, 1,1, 1,7, 2,1, 2,2, 2,3, 2,4, 2,5, 2,6, 3,1, 9,9 };
-prog_uchar letters_68[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,7, 2,1, 2,7, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
-prog_uchar letters_90[] PROGMEM = { 0,1, 0,6, 0,7, 1,1, 1,5, 1,7, 2,1, 2,4, 2,7, 3,1, 3,3, 3,7, 4,1, 4,2, 4,7, 9,9 };
-prog_uchar letters_70[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,1, 3,4, 9,9 };
-prog_uchar letters_88[] PROGMEM = { 0,1, 0,2, 0,6, 0,7, 1,3, 1,5, 2,4, 3,3, 3,5, 4,1, 4,2, 4,6, 4,7, 9,9 };
-prog_uchar letters_75[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,3, 2,5, 3,1, 3,2, 3,6, 3,7, 9,9 };
-prog_uchar letters_53[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,1, 4,5, 4,6, 9,9 };
-prog_uchar letters_48[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,1, 3,7, 4,2, 4,3, 4,4, 4,5, 4,6, 9,9 };
-prog_uchar letters_77[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,2, 2,3, 3,2, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
-prog_uchar letters_54[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,5, 4,6, 9,9 };
-prog_uchar letters_39[] PROGMEM = { 1,3, 2,1, 2,2, 9,9 };
-prog_uchar letters_85[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 1,7, 2,7, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
-prog_uchar letters_57[] PROGMEM = { 0,2, 0,3, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,4, 4,5, 4,6, 9,9 };
-prog_uchar letters_78[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,2, 2,3, 3,4, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
-prog_uchar letters_84[] PROGMEM = { 0,1, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 9,9 };
-prog_uchar letters_81[] PROGMEM = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,5, 2,7, 3,1, 3,6, 4,2, 4,3, 4,4, 4,5, 4,7, 9,9 };
-prog_uchar letters_51[] PROGMEM = { 0,2, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,5, 4,6, 9,9 };
-prog_uchar letters_86[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 1,6, 2,7, 3,6, 4,1, 4,2, 4,3, 4,4, 4,5, 9,9 };
-prog_uchar letters_72[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_73[] PROGMEM = { 0,1, 0,7, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 2,7, 9,9 };
-prog_uchar letters_44[] PROGMEM = { 1,7, 2,5, 2,6, 9,9 };
-prog_uchar letters_56[] PROGMEM = { 0,2, 0,3, 0,5, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,5, 4,6, 9,9 };
-prog_uchar letters_66[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,2, 3,3, 3,5, 3,6, 9,9 };
-prog_uchar letters_52[] PROGMEM = { 0,4, 0,5, 1,3, 1,5, 2,2, 2,5, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 4,5, 9,9 };
-prog_uchar letters_55[] PROGMEM = { 0,1, 1,1, 2,1, 2,5, 2,6, 2,7, 3,1, 3,3, 3,4, 4,1, 4,2, 9,9 };
+const uint8_t PROGMEM letters_71[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,7, 2,1, 2,4, 2,7, 3,1, 3,2, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_83[] = { 0,2, 0,3, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_67[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,1, 3,7, 9,9 };
+const uint8_t PROGMEM letters_76[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,7, 2,7, 3,7, 9,9 };
+const uint8_t PROGMEM letters_89[] = { 0,1, 0,2, 1,3, 2,4, 2,5, 2,6, 2,7, 3,3, 4,1, 4,2, 9,9 };
+const uint8_t PROGMEM letters_82[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 2,5, 3,1, 3,4, 3,6, 4,2, 4,3, 4,7, 9,9 };
+const uint8_t PROGMEM letters_79[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_33[] = { 1,1, 1,2, 1,3, 1,4, 1,5, 1,7, 9,9 };
+const uint8_t PROGMEM letters_65[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_87[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,6, 2,5, 3,6, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
+const uint8_t PROGMEM letters_69[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 9,9 };
+const uint8_t PROGMEM letters_80[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,2, 3,3, 9,9 };
+const uint8_t PROGMEM letters_50[] = { 0,2, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,7, 9,9 };
+const uint8_t PROGMEM letters_49[] = { 1,2, 1,7, 2,1, 2,2, 2,3, 2,4, 2,5, 2,6, 2,7, 3,7, 9,9 };
+const uint8_t PROGMEM letters_74[] = { 0,7, 1,1, 1,7, 2,1, 2,2, 2,3, 2,4, 2,5, 2,6, 3,1, 9,9 };
+const uint8_t PROGMEM letters_68[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,7, 2,1, 2,7, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_90[] = { 0,1, 0,6, 0,7, 1,1, 1,5, 1,7, 2,1, 2,4, 2,7, 3,1, 3,3, 3,7, 4,1, 4,2, 4,7, 9,9 };
+const uint8_t PROGMEM letters_70[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 2,1, 2,4, 3,1, 3,4, 9,9 };
+const uint8_t PROGMEM letters_88[] = { 0,1, 0,2, 0,6, 0,7, 1,3, 1,5, 2,4, 3,3, 3,5, 4,1, 4,2, 4,6, 4,7, 9,9 };
+const uint8_t PROGMEM letters_75[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,3, 2,5, 3,1, 3,2, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_53[] = { 0,1, 0,2, 0,3, 0,4, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,1, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_48[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,7, 3,1, 3,7, 4,2, 4,3, 4,4, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_77[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,2, 2,3, 3,2, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
+const uint8_t PROGMEM letters_54[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_39[] = { 1,3, 2,1, 2,2, 9,9 };
+const uint8_t PROGMEM letters_85[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 1,7, 2,7, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_57[] = { 0,2, 0,3, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,4, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_78[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,2, 2,3, 3,4, 4,1, 4,2, 4,3, 4,4, 4,5, 4,6, 4,7, 9,9 };
+const uint8_t PROGMEM letters_84[] = { 0,1, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 9,9 };
+const uint8_t PROGMEM letters_81[] = { 0,2, 0,3, 0,4, 0,5, 0,6, 1,1, 1,7, 2,1, 2,5, 2,7, 3,1, 3,6, 4,2, 4,3, 4,4, 4,5, 4,7, 9,9 };
+const uint8_t PROGMEM letters_51[] = { 0,2, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_86[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 1,6, 2,7, 3,6, 4,1, 4,2, 4,3, 4,4, 4,5, 9,9 };
+const uint8_t PROGMEM letters_72[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_73[] = { 0,1, 0,7, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 2,7, 9,9 };
+const uint8_t PROGMEM letters_44[] = { 1,7, 2,5, 2,6, 9,9 };
+const uint8_t PROGMEM letters_56[] = { 0,2, 0,3, 0,5, 0,6, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,4, 3,7, 4,2, 4,3, 4,5, 4,6, 9,9 };
+const uint8_t PROGMEM letters_66[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,2, 3,3, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_52[] = { 0,4, 0,5, 1,3, 1,5, 2,2, 2,5, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 4,5, 9,9 };
+const uint8_t PROGMEM letters_55[] = { 0,1, 1,1, 2,1, 2,5, 2,6, 2,7, 3,1, 3,3, 3,4, 4,1, 4,2, 9,9 };
 
-prog_uchar* font[] = {  letters_33 /*!*/,  0,  0,  0,  0,  0,  letters_39 /*'*/,  0,  0,  0,  0,  letters_44 /*,*/,  0,  0,  0,  
+const uint8_t* font[] = {  letters_33 /*!*/,  0,  0,  0,  0,  0,  letters_39 /*'*/,  0,  0,  0,  0,  letters_44 /*,*/,  0,  0,  0,  
 letters_48 /*0*/,  letters_49 /*1*/,  letters_50 /*2*/,  letters_51 /*3*/,  letters_52 /*4*/,  letters_53 /*5*/,  
 letters_54 /*6*/,  letters_55 /*7*/,  letters_56 /*8*/,  letters_57 /*9*/,  0,  0,  0,  0,  0,  0,  0,  letters_65 /*A*/,  
 letters_66 /*B*/,  letters_67 /*C*/,  letters_68 /*D*/,  letters_69 /*E*/,  letters_70 /*F*/,  letters_71 /*G*/,  
@@ -86,32 +86,32 @@ uint16_t fontMax=90;
 
 // This section of the font works now, but doesn't appear to be correct.
 
-prog_uchar letters_117[] PROGMEM = { 0,4, 0,5, 0,6, 1,7, 2,7, 3,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_104[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_109[] PROGMEM = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,5, 2,6, 2,7, 3,4, 4,5, 4,6, 4,7, 9,9 };
-prog_uchar letters_114[] PROGMEM = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 9,9 };
-prog_uchar letters_108[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 9,9 };
-prog_uchar letters_116[] PROGMEM = { 0,2, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,2, 2,7, 3,7, 9,9 };
-prog_uchar letters_107[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,5, 2,4, 2,6, 3,3, 3,7, 9,9 };
-prog_uchar letters_118[] PROGMEM = { 0,4, 0,5, 1,6, 2,7, 3,6, 4,4, 4,5, 9,9 };
-prog_uchar letters_98[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 1,7, 2,4, 2,7, 3,5, 3,6, 9,9 };
-prog_uchar letters_120[] PROGMEM = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,5, 2,4, 2,6, 3,3, 3,7, 9,9 };
-prog_uchar letters_119[] PROGMEM = { 0,4, 0,5, 1,6, 1,7, 2,4, 2,5, 3,6, 3,7, 4,4, 4,5, 9,9 };
-prog_uchar letters_111[] PROGMEM = { 0,5, 0,6, 1,4, 1,7, 2,4, 2,7, 3,5, 3,6, 9,9 };
-prog_uchar letters_105[] PROGMEM = { 0,1, 0,3, 0,4, 0,5, 0,6, 0,7, 9,9 };
-prog_uchar letters_110[] PROGMEM = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_113[] PROGMEM = { 0,4, 0,5, 1,3, 1,6, 2,3, 2,6, 3,3, 3,4, 3,5, 3,6, 3,7, 3,8, 9,9 };
-prog_uchar letters_100[] PROGMEM = { 0,2, 0,3, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
-prog_uchar letters_103[] PROGMEM = { 0,3, 0,4, 0,8, 1,2, 1,5, 1,8, 2,2, 2,5, 2,8, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_112[] PROGMEM = { 0,3, 0,4, 0,5, 0,6, 0,7, 0,8, 1,3, 1,6, 2,3, 2,6, 3,4, 3,5, 9,9 };
-prog_uchar letters_101[] PROGMEM = { 0,4, 0,5, 0,6, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,4, 3,5, 3,7, 9,9 };
-prog_uchar letters_102[] PROGMEM = { 0,5, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 2,5, 3,1, 9,9 };
-prog_uchar letters_115[] PROGMEM = { 0,3, 0,4, 0,7, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,3, 3,5, 3,6, 3,7, 9,9 };
-prog_uchar letters_99[] PROGMEM = { 0,5, 0,6, 1,4, 1,7, 2,4, 2,7, 3,4, 3,7, 9,9 };
-prog_uchar letters_106[] PROGMEM = { 0,8, 1,2, 1,4, 1,5, 1,6, 1,7, 1,8, 9,9 };
-prog_uchar letters_97[] PROGMEM = { 0,6, 0,7, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_117[] = { 0,4, 0,5, 0,6, 1,7, 2,7, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_104[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_109[] = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,5, 2,6, 2,7, 3,4, 4,5, 4,6, 4,7, 9,9 };
+const uint8_t PROGMEM letters_114[] = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 9,9 };
+const uint8_t PROGMEM letters_108[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 9,9 };
+const uint8_t PROGMEM letters_116[] = { 0,2, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,2, 2,7, 3,7, 9,9 };
+const uint8_t PROGMEM letters_107[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,5, 2,4, 2,6, 3,3, 3,7, 9,9 };
+const uint8_t PROGMEM letters_118[] = { 0,4, 0,5, 1,6, 2,7, 3,6, 4,4, 4,5, 9,9 };
+const uint8_t PROGMEM letters_98[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,4, 1,7, 2,4, 2,7, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_120[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,5, 2,4, 2,6, 3,3, 3,7, 9,9 };
+const uint8_t PROGMEM letters_119[] = { 0,4, 0,5, 1,6, 1,7, 2,4, 2,5, 3,6, 3,7, 4,4, 4,5, 9,9 };
+const uint8_t PROGMEM letters_111[] = { 0,5, 0,6, 1,4, 1,7, 2,4, 2,7, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_105[] = { 0,1, 0,3, 0,4, 0,5, 0,6, 0,7, 9,9 };
+const uint8_t PROGMEM letters_110[] = { 0,4, 0,5, 0,6, 0,7, 1,4, 2,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_113[] = { 0,4, 0,5, 1,3, 1,6, 2,3, 2,6, 3,3, 3,4, 3,5, 3,6, 3,7, 3,8, 9,9 };
+const uint8_t PROGMEM letters_100[] = { 0,2, 0,3, 1,1, 1,4, 1,7, 2,1, 2,4, 2,7, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 9,9 };
+const uint8_t PROGMEM letters_103[] = { 0,3, 0,4, 0,8, 1,2, 1,5, 1,8, 2,2, 2,5, 2,8, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_112[] = { 0,3, 0,4, 0,5, 0,6, 0,7, 0,8, 1,3, 1,6, 2,3, 2,6, 3,4, 3,5, 9,9 };
+const uint8_t PROGMEM letters_101[] = { 0,4, 0,5, 0,6, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,4, 3,5, 3,7, 9,9 };
+const uint8_t PROGMEM letters_102[] = { 0,5, 1,1, 1,2, 1,3, 1,4, 1,5, 1,6, 1,7, 2,1, 2,5, 3,1, 9,9 };
+const uint8_t PROGMEM letters_115[] = { 0,3, 0,4, 0,7, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,3, 3,5, 3,6, 3,7, 9,9 };
+const uint8_t PROGMEM letters_99[] = { 0,5, 0,6, 1,4, 1,7, 2,4, 2,7, 3,4, 3,7, 9,9 };
+const uint8_t PROGMEM letters_106[] = { 0,8, 1,2, 1,4, 1,5, 1,6, 1,7, 1,8, 9,9 };
+const uint8_t PROGMEM letters_97[] = { 0,6, 0,7, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,4, 3,5, 3,6, 3,7, 9,9 };
 
-prog_uchar* font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98 /*b*/,  letters_99 /*c*/,  letters_100 /*d*/,  letters_101 /*e*/,  letters_102 /*f*/,  letters_103 /*g*/,  letters_104 /*h*/,  letters_105 /*i*/,  letters_106 /*j*/,  letters_107 /*k*/,  letters_108 /*l*/,  letters_109 /*m*/,  letters_110 /*n*/,  letters_111 /*o*/,  letters_112 /*p*/,  letters_113 /*q*/,  letters_114 /*r*/,  letters_115 /*s*/,  letters_116 /*t*/,  letters_117 /*u*/,  letters_118 /*v*/,  letters_119 /*w*/,  letters_120 /*x*/ };
+const uint8_t* font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98 /*b*/,  letters_99 /*c*/,  letters_100 /*d*/,  letters_101 /*e*/,  letters_102 /*f*/,  letters_103 /*g*/,  letters_104 /*h*/,  letters_105 /*i*/,  letters_106 /*j*/,  letters_107 /*k*/,  letters_108 /*l*/,  letters_109 /*m*/,  letters_110 /*n*/,  letters_111 /*o*/,  letters_112 /*p*/,  letters_113 /*q*/,  letters_114 /*r*/,  letters_115 /*s*/,  letters_116 /*t*/,  letters_117 /*u*/,  letters_118 /*v*/,  letters_119 /*w*/,  letters_120 /*x*/ };
 */
 
 #endif
@@ -129,7 +129,7 @@ uint8_t Font::Draw(unsigned char letter,int x,int y,int set) {
   uint8_t charCol;
   uint8_t charRow;
 
-  prog_uchar* character;
+  const uint8_t* character;
   if (letter==' ') return 3+2;
   if (letter<fontMin || letter>fontMax) {
     return 0;
@@ -177,7 +177,7 @@ uint8_t Font::Draw90(unsigned char letter,int x,int y,int set) {
   uint8_t charCol;
   uint8_t charRow;
 
-  prog_uchar* character;
+  const uint8_t* character;
   if (letter==' ') return 3+2;
   if (letter<fontMin || letter>fontMax) {
     return 0;
