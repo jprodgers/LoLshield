@@ -119,10 +119,17 @@ typedef struct LEDPosition {
 
 #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
 #define	P(pin)  ((pin < 5) ? (pin + 1) : (pin == 5) ? (2) : (pin))
+#elif defined (__AVR_ATmega32U4__)
+#define	P(pin)	((pin == 2) ? (1) : (pin == 3) ? (0) : (pin == 5) ? (2) : (pin == 6) ? (7) : (pin == 7) ? (5) : (pin == 12) ? (6) : (pin == 13) ? (3) : (pin))
 #else
 #define	P(pin)	(pin)
 #endif
+#if !defined (__AVR_ATmega32U4__)
 #define L(high, low)	{ P(high), (P(low) - 2) }
+#else
+// Since the offset of 2 doesn't have to do anything with the ports anymore and just adds complexity we omit it.
+#define L(high, low)	{ P(high), P(low) }
+#endif
 const LEDPosition PROGMEM ledMap[126] = {
     L(13, 5), L(13, 6), L(13, 7), L(13, 8), L(13, 9), L(13,10), L(13,11), L(13,12),
     L(13, 4), L( 4,13), L(13, 3), L( 3,13), L(13, 2), L( 2,13),
@@ -145,6 +152,47 @@ const LEDPosition PROGMEM ledMap[126] = {
 };
 #undef L(high, low)
 
+/*
+Converting the pin numbers to indices usable with Leonardo.
+
+pin number -> Leonardo port number -> logical index
+---------------------------------------------------
+02         -> D1                   -> 01
+03         -> D0                   -> 00
+04         -> D4                   -> 04
+05         -> C6                   -> 02
+06         -> D7                   -> 07
+07         -> E6                   -> 05
+08         -> B4                   -> 08
+09         -> B5                   -> 09
+10         -> B6                   -> 10
+11         -> B7                   -> 11
+12         -> D6                   -> 06
+13         -> C7                   -> 03
+
+This yields the horrible macro
+#define P(pin)  ((pin == 2) ? (1) : (pin == 3) ? (0) : (pin == 5) ? (2) : (pin == 6) ? (7) : (pin == 7) ? (5) : (pin == 12) ? (6) : (pin == 13) ? (3) : (pin))
+TODO If anyone has a better idea how to handle this, feel free to change it.
+TODO Another possibility would be to just add another ledMap without the remap macros.
+
+The order in which the LEDs light up is now pretty random, but shouldn't be visible with a high update rate.
+
+The used ports are
+B7, B6, B5, B4, --, --, --, --
+C7, C6, --, --, --, --, --, --
+D7, D6, --, D4, --, --, D1, D0
+--, E6, --, --, --, --, --, --
+
+Luckily, these can merge together into the following contiguous order, stored in the 16bit pixels variable.
+--, --, --, --, B7, B6, B5, B4
+D7, D6, E6, D4, C7, C6, D1, D0
+
+Now the ISR can work in the same way, it just has to extract the ports like this
+PORTB = (pixels >> 4) & 0xF0);
+PORTC = (pixels << 4) & 0xC0);
+PORTD = (pixels << 0) & 0xD3);
+PORTE = (pixels << 1) & 0x40);
+*/
 
 /* -----------------------------------------------------------------  */
 /** Constructor : Initialize the interrupt code. 
@@ -169,6 +217,12 @@ void LedSign::Init(uint8_t mode)
 #elif defined (__AVR_ATmega128__)
     TIMSK &= ~(_BV(TOIE2) | _BV(OCIE2));
     TCCR2 &= ~(_BV(WGM21) | _BV(WGM20));
+#elif defined (__AVR_ATmega32U4__)
+    // The only 8bit timer on the Leonardo is used by default, so we use the 16bit Timer1
+    // in CTC mode with a compare value of 256 to achieve the same behaviour.
+    TIMSK1 &= ~(_BV(TOIE1) | _BV(OCIE1A));
+    TCCR1A &= ~(_BV(WGM10) | _BV(WGM11));
+    OCR1A = 256;
 #endif
 	
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
@@ -189,6 +243,16 @@ void LedSign::Init(uint8_t mode)
     } else { // F_CPU >= 8Mhz, prescaler set to 8
         fastPrescaler.tccr2 = _BV(CS21);		// 8
         slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 64
+        fastPrescaler.relativeSpeed = 8;
+    }
+#elif defined (__AVR_ATmega32U4__)
+    if (F_CPU < 8000000UL) {	// prescaler set to 8
+        fastPrescaler.tccr2 = _BV(WGM12) | _BV(CS10);                // 1
+        slowPrescaler.tccr2 = _BV(WGM12) | _BV(CS11);                // 8
+        fastPrescaler.relativeSpeed = 8;
+    } else { // F_CPU >= 8Mhz, prescaler set to 8
+        fastPrescaler.tccr2 = _BV(WGM12) | _BV(CS11);                // 8
+        slowPrescaler.tccr2 = _BV(WGM12) | _BV(CS11) | _BV(CS10);    // 64
         fastPrescaler.relativeSpeed = 8;
     }
 #endif
@@ -237,8 +301,17 @@ void LedSign::Init(uint8_t mode)
 #elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
     TIMSK |= _BV(TOIE2);
     TCCR2 = fastPrescaler.tccr2;
+#elif defined (__AVR_ATmega32U4__)
+    // Enable output compare match interrupt
+    TIMSK1 |= _BV(OCIE1A);
+    TCCR1B = fastPrescaler.tccr2;
 #endif
-    TCNT2 = 255;	// interrupt ASAP
+    // interrupt ASAP
+#if !defined (__AVR_ATmega32U4__)
+    TCNT2 = 255;
+#else
+    TCNT1 = 255;
+#endif
 
 #ifdef DOUBLE_BUFFER
     // If we are in double-buffer mode, wait until the display flips before we
@@ -391,7 +464,11 @@ void LedSign::SetBrightness(uint8_t brightness)
 /* -----------------------------------------------------------------  */
 /** The Interrupt code goes here !  
  */
+#if !defined (__AVR_ATmega32U4__)
 ISR(TIMER2_OVF_vect) {
+#else
+ISR(TIMER1_COMPA_vect) {
+#endif
 #ifdef MEASURE_ISR_TIME
     digitalWrite(statusPIN, HIGH);
 #endif
@@ -410,8 +487,14 @@ ISR(TIMER2_OVF_vect) {
     TCCR2B = frontTimer->prescaler[page];
 #elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
     TCCR2 = frontTimer->prescaler[page];
+#elif defined (__AVR_ATmega32U4__)
+    TCCR1B = frontTimer->prescaler[page];
 #endif
+#if !defined (__AVR_ATmega32U4__)
     TCNT2 = frontTimer->counts[page];
+#else
+    TCNT1 = frontTimer->counts[page];
+#endif
 
 #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
     // Turn everything off
@@ -434,6 +517,24 @@ ISR(TIMER2_OVF_vect) {
         DDRG |= ((dir << 0) & 0x20);
         DDRH |= ((dir >> 3) & 0x78);
         DDRB |= ((dir >> 6) & 0xf0);
+    }
+#elif defined (__AVR_ATmega32U4__)
+    // Turn everything off
+    DDRB &= ~0xF0;
+    DDRC &= ~0xC0;
+    DDRD &= ~0xD3;
+    DDRE &= ~0x40;
+
+    if (page < SHADES - 1) {
+        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle));
+        PORTB = (PORTB & (~0xF0)) | ((data >> 4) & 0xF0);
+        PORTC = (PORTC & (~0xC0)) | ((data << 4) & 0xC0);
+        PORTD = (PORTD & (~0xD3)) | ((data << 0) & 0xD3);
+        PORTE = (PORTE & (~0x40)) | ((data << 1) & 0x40);
+        DDRB |= ((dir >> 4) & 0xF0);
+        DDRC |= ((dir << 4) & 0xC0);
+        DDRD |= ((dir << 0) & 0xD3);
+        DDRE |= ((dir << 1) & 0x40);
     }
 #else
     // Turn everything off
