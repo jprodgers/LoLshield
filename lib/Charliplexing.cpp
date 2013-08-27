@@ -424,7 +424,7 @@ void LedSign::SetBrightness(uint8_t brightness)
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
     const int max = 255;
-    const float scale = 2.5;
+    const float scale = 1.8;
     const float delta = pow(max, 1.0 / scale) / (SHADES - 1);
     int counts[SHADES]; 
     uint8_t i;
