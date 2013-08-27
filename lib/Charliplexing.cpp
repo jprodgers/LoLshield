@@ -423,15 +423,35 @@ void LedSign::SetBrightness(uint8_t brightness)
     /*   ---- This needs review! Please review. -- thilo  */
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
-    const int max = 255;
-    const float scale = 1.8;
-    const float delta = pow(max, 1.0 / scale) / (SHADES - 1);
-    int counts[SHADES]; 
     uint8_t i;
+    const int max = 255;
+#define	C(x)	(0.49999f + max * brightnessPercent * fastPrescaler.relativeSpeed * x)
+#if SHADES == 2
+    const int counts[SHADES] = {
+	0.0f,
+	C(1.0f),
+    };
+#elif SHADES == 8
+    const int counts[SHADES] = {
+	0.0f,
+	C(0.030117819624378613658712f),
+	C(0.104876339357015456218728f),
+	C(0.217591430058779512857041f),
+	C(0.365200625214741116475101f),
+	C(0.545719579451565749226202f),
+	C(0.757697368024318811680598f),
+	C(1.0f),
+    };
+#else
+    // NOTE: Changing "scale" invalidates any tables above!
+    const float scale = 1.8f;
+    const float delta = pow(max, 1.0f / scale) / (SHADES - 1);
+    int counts[SHADES]; 
 
     counts[0] = 0;
     for (i=1; i<SHADES; i++)
-        counts[i] = pow(i * delta, scale) * brightnessPercent * fastPrescaler.relativeSpeed + 0.49999;
+        counts[i] = pow(i * delta, scale) * brightnessPercent * fastPrescaler.relativeSpeed + 0.49999f;
+#endif
 
     // Wait until the previous brightness request goes through
     while( videoFlipTimer ) {
