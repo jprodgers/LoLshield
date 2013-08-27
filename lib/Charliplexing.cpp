@@ -445,12 +445,11 @@ void LedSign::SetBrightness(uint8_t brightness)
 #else
     // NOTE: Changing "scale" invalidates any tables above!
     const float scale = 1.8f;
-    const float delta = pow(max, 1.0f / scale) / (SHADES - 1);
     int counts[SHADES]; 
 
-    counts[0] = 0;
+    counts[0] = 0.0f;
     for (i=1; i<SHADES; i++)
-        counts[i] = pow(i * delta, scale) * brightnessPercent * fastPrescaler.relativeSpeed + 0.49999f;
+        counts[i] = C(pow(i / (float)(SHADES - 1), scale));
 #endif
 
     // Wait until the previous brightness request goes through
