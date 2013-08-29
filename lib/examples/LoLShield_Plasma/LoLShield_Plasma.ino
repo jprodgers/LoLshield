@@ -57,13 +57,13 @@ void loop() {
       
       // Calculate the distance between this LED, and p1.
       Point dist1 = { col_f - p1.x, row_f - p1.y };  // The vector from p1 to this LED.
-      float distance = sqrt( dist1.x*dist1.x + dist1.y*dist1.y );
+      float distance = dist1.x*dist1.x + dist1.y*dist1.y;
       
       // Calculate the distance between this LED, and p2.
       Point dist2 = { col_f - p2.x, row_f - p2.y };  // The vector from p2 to this LED.
       // Multiply this with the other distance, this will create weird plasma values :)
-      distance *= sqrt( dist2.x*dist2.x + dist2.y*dist2.y );
-      //distance += sqrt( dist2.x*dist2.x + dist2.y*dist2.y );  // Variation: weird linear color bands. Might need to increase colorStretch.
+      distance *= dist2.x*dist2.x + dist2.y*dist2.y;
+      distance = sqrt(distance);
       
       // Warp the distance with a sin() function. As the distance value increases, the LEDs will get light,dark,light,dark,etc...
       // You can use a cos() for slightly different shading, or experiment with other functions. Go crazy!
