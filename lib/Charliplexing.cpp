@@ -267,10 +267,7 @@ void LedSign::Init(uint8_t mode)
     backTimer = &timer[1];
     frontTimer = &timer[0];
 
-    SetBrightness(127);
-	
-    // Clear the buffer and display it
-    LedSign::Clear(0);
+    LedSign::SetBrightness(127);
 
     // Then start the display
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
@@ -303,16 +300,13 @@ void LedSign::Init(uint8_t mode)
  */
 void LedSign::Flip(bool blocking)
 {
-    if (displayMode & DOUBLE_BUFFER)
-    {
-        // Just set the flip flag, the buffer will flip between redraws
-        videoFlipPage = true;
+    // Just set the flip flag, the buffer will flip between redraws
+    videoFlipPage = true;
 
-        // If we are blocking, sit here until the page flips.
-	if (blocking)
-            while (videoFlipPage)
-                ;
-    }
+    // If we are blocking, sit here until the page flips.
+    if (blocking)
+        while (videoFlipPage)
+            ;
 }
 #endif
 
@@ -546,9 +540,8 @@ ISR(TIMER1_COMPA_vect) {
 
 #ifdef DOUBLE_BUFFER
             // If the page should be flipped, do it here.
-            if (videoFlipPage && (displayMode & DOUBLE_BUFFER))
+            if (videoFlipPage)
             {
-                // TODO: is this an atomic operation?
                 videoFlipPage = false;
     
                 videoPage* temp = displayBuffer;
