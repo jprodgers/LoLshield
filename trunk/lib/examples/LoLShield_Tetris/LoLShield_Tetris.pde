@@ -42,57 +42,73 @@ boolean playGrid[GRID_HEIGHT][GRID_WIDTH];
 const uint8_t NUM_LEVEL_STEPS = 4;
 const uint32_t LEVEL_STEPS[NUM_LEVEL_STEPS] = {200,600,1800,5400};
 
-// The single view of the square piece :
-// 00
-// 00
-pieceView_t piece00 = {{{1,0}, {2,0}, {1,1}, {2,1}}};
-
-// The two views of the bar piece :
-// 0000
-pieceView_t piece10 = {{{0,1}, {1,1}, {2,1}, {3,1}}};
-pieceView_t piece11 = {{{1,0}, {1,1}, {1,2}, {1,3}}};
-
-// The two views of the first S :
-// 00
-//  00
-pieceView_t piece20 = {{{0,0}, {1,0}, {1,1}, {2,1}}};
-pieceView_t piece21 = {{{2,0}, {1,1}, {2,1}, {1,2}}};
-
-// The two views of the second S :
-//  00
-// 00
-pieceView_t piece30 = {{{1,0}, {2,0}, {0,1}, {1,1}}};
-pieceView_t piece31 = {{{0,0}, {0,1}, {1,1}, {1,2}}};
-
-// The four views of the first L :
-// 000
-// 0
-pieceView_t piece40 = {{{0,1}, {1,1}, {2,1}, {0,2}}};
-pieceView_t piece41 = {{{1,0}, {1,1}, {1,2}, {2,2}}};
-pieceView_t piece42 = {{{2,0}, {0,1}, {1,1}, {2,1}}};
-pieceView_t piece43 = {{{0,0}, {1,0}, {1,1}, {1,2}}};
-
-// The four views of the T :
-// 000
-//   0
-pieceView_t piece50 = {{{0,1}, {1,1}, {2,1}, {2,2}}};
-pieceView_t piece51 = {{{1,0}, {2,0}, {1,1}, {1,2}}};
-pieceView_t piece52 = {{{0,0}, {0,1}, {1,1}, {2,1}}};
-pieceView_t piece53 = {{{1,0}, {1,1}, {1,2}, {0,2}}};
-
-// The four views of the second L :
-// 000
-//  0
-pieceView_t piece60 = {{{0,1}, {1,1}, {2,1}, {1,2}}};
-pieceView_t piece61 = {{{1,0}, {1,1}, {2,1}, {1,2}}};
-pieceView_t piece62 = {{{1,0}, {0,1}, {1,1}, {2,1}}};
-pieceView_t piece63 = {{{1,0}, {0,1}, {1,1}, {1,2}}};
-
-/** The pointer to the array for holding all the pieces declarations. */
-piece_t** pieces;
+const piece_t pieces[7] = {
+  {{
+    // The single view of the square piece :
+    // 00
+    // 00
+    {{{1,0}, {2,0}, {1,1}, {2,1}}},
+    {{{1,0}, {2,0}, {1,1}, {2,1}}},
+    {{{1,0}, {2,0}, {1,1}, {2,1}}},
+    {{{1,0}, {2,0}, {1,1}, {2,1}}},
+  }},
+  {{
+    // The two views of the bar piece :
+    // 0000
+    {{{0,1}, {1,1}, {2,1}, {3,1}}},
+    {{{1,0}, {1,1}, {1,2}, {1,3}}},
+    {{{0,1}, {1,1}, {2,1}, {3,1}}},
+    {{{1,0}, {1,1}, {1,2}, {1,3}}},
+  }},
+  {{
+    // The two views of the first S :
+    // 00
+    //  00
+    {{{0,0}, {1,0}, {1,1}, {2,1}}},
+    {{{2,0}, {1,1}, {2,1}, {1,2}}},
+    {{{0,0}, {1,0}, {1,1}, {2,1}}},
+    {{{2,0}, {1,1}, {2,1}, {1,2}}},
+  }},
+  {{
+    // The two views of the second S :
+    //  00
+    // 00
+    {{{1,0}, {2,0}, {0,1}, {1,1}}},
+    {{{0,0}, {0,1}, {1,1}, {1,2}}},
+    {{{1,0}, {2,0}, {0,1}, {1,1}}},
+    {{{0,0}, {0,1}, {1,1}, {1,2}}},
+  }},
+  {{
+    // The four views of the first L :
+    // 000
+    // 0
+    {{{0,1}, {1,1}, {2,1}, {0,2}}},
+    {{{1,0}, {1,1}, {1,2}, {2,2}}},
+    {{{2,0}, {0,1}, {1,1}, {2,1}}},
+    {{{0,0}, {1,0}, {1,1}, {1,2}}},
+  }},
+  {{
+    // The four views of the T :
+    // 000
+    //   0
+    {{{0,1}, {1,1}, {2,1}, {2,2}}},
+    {{{1,0}, {2,0}, {1,1}, {1,2}}},
+    {{{0,0}, {0,1}, {1,1}, {2,1}}},
+    {{{1,0}, {1,1}, {1,2}, {0,2}}},
+  }},
+  {{
+    // The four views of the second L :
+    // 000
+    //  0
+    {{{0,1}, {1,1}, {2,1}, {1,2}}},
+    {{{1,0}, {1,1}, {2,1}, {1,2}}},
+    {{{1,0}, {0,1}, {1,1}, {2,1}}},
+    {{{1,0}, {0,1}, {1,1}, {1,2}}},
+  }},
+};
 
 /** The piece being played. */
-piece_t* currentPiece;
+const piece_t* currentPiece;
 /** The current position and view of the piece being played. */
 pos_t position;
 
@@ -102,9 +118,9 @@ pos_t position;
  * @param position the position and view of the piece to draw or remove.
  * @param set 1 or 0 to draw or remove the piece.
  */
-void switchPiece(struct piece* piece, const pos_t& position, int set=1) {
+void switchPiece(const piece_t* piece, const pos_t& position, int set=1) {
   for(uint8_t i=0;i<4;i++) {
-    coord_t element = (*piece->views)[position.view].elements[i];
+    coord_t element = piece->views[position.view].elements[i];
     LedSign::Set(
         13-(element.y+position.coord.y),
         element.x+position.coord.x,
@@ -149,79 +165,6 @@ void endGame() {
 
 /* -----------------------------------------------------------------  */
 /**
- * Creates a piece structure for game initialization.
- * @return a pointer to the created piece structure.
- */
-struct piece* createPiece() {
-  piece_t* created = (piece_t*) malloc(sizeof(piece_t));
-  memset(created, '\0', sizeof(piece_t));
-  return created;
-}
-
-/* -----------------------------------------------------------------  */
-/**
- * Adds a view to an existing piece structure.
- * @param piece the piece which will be added a view.
- * @param view the view to add to the given piece.
- */
-void addView(struct piece* piece, struct pieceView* view) {
-  piece->numViews++;
-  piece->views = (pieceView_t**) realloc(piece->views, (piece->numViews)*sizeof(pieceView_t*));
-  piece->views[piece->numViews-1] = view;
-}
-
-/* -----------------------------------------------------------------  */
-/**
- * Initialize the game data (the game pieces data).
- * Some parts are malloc-ed that may as well be on the stack,
- * weren't it that I fought with the compiler and complex constant
- * initializers.
- */
-void initGame() {
-  // Initialize the pieces data structures.
-  pieces = (piece_t**) calloc(7, sizeof(piece_t*));
-  pieces[0] = createPiece();
-  addView(pieces[0], &piece00);
-  pieces[1] = createPiece();
-  addView(pieces[1], &piece10);
-  addView(pieces[1], &piece11);
-  pieces[2] = createPiece();
-  addView(pieces[2], &piece20);
-  addView(pieces[2], &piece21);
-  pieces[3] = createPiece();
-  addView(pieces[3], &piece30);
-  addView(pieces[3], &piece31);
-  pieces[4] = createPiece();
-  addView(pieces[4], &piece40);
-  addView(pieces[4], &piece41);
-  addView(pieces[4], &piece42);
-  addView(pieces[4], &piece43);
-  pieces[5] = createPiece();
-  addView(pieces[5], &piece50);
-  addView(pieces[5], &piece51);
-  addView(pieces[5], &piece52);
-  addView(pieces[5], &piece53);
-  pieces[6] = createPiece();
-  addView(pieces[6], &piece60);
-  addView(pieces[6], &piece61);
-  addView(pieces[6], &piece62);
-  addView(pieces[6], &piece63);
-}
-
-/* -----------------------------------------------------------------  */
-/**
- * Cleanup the dynamically allocated data (the game pieces data).
- */
-void cleanup() {
-  for (uint8_t i=0; i<7; i++) {
-    piece_t* pieceToFree = pieces[i];
-    free(currentPiece);
-  }
-  free(pieces);
-}
-
-/* -----------------------------------------------------------------  */
-/**
  * Game initialization, or reinitialization after a game over.
  */
 void startGame() {
@@ -239,11 +182,11 @@ void startGame() {
  * @param piece the piece to try and put on the play grid.
  * @param position the position and view to try and put the piece.
  */
-boolean checkPieceMove(struct piece* piece, const pos_t& position) {
+boolean checkPieceMove(const piece_t* piece, const pos_t& position) {
   boolean isOk = true;
 
   for (uint8_t i=0; i<4; i++) {
-    coord_t element = (*piece->views)[position.view].elements[i];
+    coord_t element = piece->views[position.view].elements[i];
     // Check x boundaries.
     uint8_t eltXPos = element.x+position.coord.x;
     if (eltXPos>8 || eltXPos<0) {
@@ -280,7 +223,7 @@ void playerMovePiece()
     if (analogRead(4)>1000) {
       status = 1;
       newPos = position;
-      newPos.view = (newPos.view+1)%currentPiece->numViews;
+      newPos.view = (newPos.view+1)&3;
       moveSuccess = checkPieceMove(currentPiece, newPos);
       if (moveSuccess) {
         switchPiece(currentPiece, position, 0);
@@ -344,7 +287,7 @@ void timerPieceDown(uint32_t& count) {
     } else {
       // Drop the piece on the grid.
       for (uint8_t i=0; i<4; i++) {
-        coord_t element = (*currentPiece->views)[position.view].elements[i];
+        coord_t element = currentPiece->views[position.view].elements[i];
         uint8_t eltXPos = element.x+position.coord.x;
         uint8_t eltYPos = element.y+position.coord.y;
         playGrid[eltYPos][eltXPos] = true;
@@ -435,9 +378,9 @@ void processEndPiece() {
 void nextPiece() {
   position.coord.x = 3;
   position.coord.y = 0;
-  position.view = 0;
+  position.view = random(0,3);
 
-  currentPiece = pieces[random(0,7)];
+  currentPiece = &pieces[random(0,7)];
   
   if (!checkPieceMove(currentPiece, position)) {
     endGame();
@@ -453,7 +396,6 @@ void setup()                    // run once, when the sketch starts
 {
   LedSign::Init();
   randomSeed(analogRead(2));
-  initGame();
   startGame();
   nextPiece();
 }
