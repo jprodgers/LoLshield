@@ -33,7 +33,7 @@
                            //Initialized in setup.
 
 //Sets the time each frame is shown (milliseconds)
-unsigned int blinkdelay = 1000 / 50;
+const unsigned int blinkdelay = 1000 / 50;
 
 /*
 The BitMap array is what contains the frame data. Each line is one full frame.

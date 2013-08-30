@@ -36,7 +36,7 @@
 #define SIZEX DISPLAY_COLS    //Sets the X axis size
 #define SIZEY DISPLAY_ROWS    //Sets the Y axis size
 byte world[2][SIZEX][SIZEY];  //Creates a double buffer world
-long density = 50;            //Sets density % during seeding
+const int density = 50;       //Sets density % during seeding
 int geck = 0;                 //Counter for re-seeding
 
 void setup() {
