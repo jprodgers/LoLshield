@@ -122,7 +122,7 @@ pos_t position;
  */
 void switchPiece(const piece_t* piece, const pos_t& position, uint8_t c=1) {
   for(uint8_t i=0;i<4;i++) {
-    coord_t element = piece->views[position.view].elements[i];
+    coordPacked_t element = piece->views[position.view].elements[i];
     uint8_t eltXPos = element.x+position.coord.x;
     uint8_t eltYPos = element.y+position.coord.y;
     LedSign::Set(13-eltYPos, eltXPos, c);
@@ -180,7 +180,7 @@ void startGame() {
  */
 boolean checkPieceMove(const piece_t* piece, const pos_t& position) {
   for (uint8_t i=0; i<4; i++) {
-    coord_t element = piece->views[position.view].elements[i];
+    coordPacked_t element = piece->views[position.view].elements[i];
     int8_t eltXPos = element.x+position.coord.x;
     int8_t eltYPos = element.y+position.coord.y;
     // Check x boundaries.
@@ -278,7 +278,7 @@ void timerPieceDown(uint32_t& count) {
     } else {
       // Drop the piece on the grid.
       for (uint8_t i=0; i<4; i++) {
-        coord_t element = currentPiece->views[position.view].elements[i];
+        coordPacked_t element = currentPiece->views[position.view].elements[i];
         uint8_t eltXPos = element.x+position.coord.x;
         uint8_t eltYPos = element.y+position.coord.y;
         playGrid[eltYPos][eltXPos] = true;
