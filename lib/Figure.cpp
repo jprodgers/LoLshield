@@ -22,28 +22,25 @@
   Boston, MA 02111-1307, USA.
 */
 
-#include "Charliplexing.h"
 #include "Figure.h"
-
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
+#include "Charliplexing.h"
+#include <Arduino.h>
 #include <inttypes.h>
+#include <avr/pgmspace.h>
 
+#define C(c,r) ((c << 4) | r)
 
-uint8_t figuresData[][14][2] = { 
-{ {0,0}, {1,0}, {2,0}, {0,1}, {2,1}, {0,2}, {2,2}, {0,3}, {2,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9} },
-{ {1,0}, {0,1}, {1,1}, {1,2}, {1,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {2,1}, {1,2}, {0,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {2,1}, {0,2}, {1,2}, {2,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {2,0}, {0,1}, {2,1}, {0,2}, {1,2}, {2,2}, {2,3}, {2,4}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {0,1}, {0,2}, {1,2}, {2,2}, {2,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {0,1}, {0,2}, {1,2}, {2,2}, {0,3}, {2,3}, {0,4}, {1,4}, {2,4}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {2,1}, {2,2}, {1,3}, {1,4}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {0,1}, {2,1}, {0,2}, {1,2}, {2,2}, {0,3}, {2,3}, {0,4}, {1,4}, {2,4}, {9,9} },
-{ {0,0}, {1,0}, {2,0}, {0,1}, {2,1}, {0,2}, {1,2}, {2,2}, {2,3}, {0,4}, {1,4}, {9,9}, {9,9}, {9,9} }
+PROGMEM uint8_t figuresData[][14] = { 
+{ C(0,0), C(1,0), C(2,0), C(0,1), C(2,1), C(0,2), C(2,2), C(0,3), C(2,3), C(0,4), C(1,4), C(2,4), 255, 255 },
+{ C(1,0), C(0,1), C(1,1), C(1,2), C(1,3), C(0,4), C(1,4), C(2,4), 255, 255, 255, 255, 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(2,1), C(1,2), C(0,3), C(0,4), C(1,4), C(2,4), 255, 255, 255, 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(2,1), C(0,2), C(1,2), C(2,3), C(0,4), C(1,4), C(2,4), 255, 255, 255, 255 },
+{ C(0,0), C(2,0), C(0,1), C(2,1), C(0,2), C(1,2), C(2,2), C(2,3), C(2,4), 255, 255, 255, 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(0,1), C(0,2), C(1,2), C(2,2), C(2,3), C(0,4), C(1,4), C(2,4), 255, 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(0,1), C(0,2), C(1,2), C(2,2), C(0,3), C(2,3), C(0,4), C(1,4), C(2,4), 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(2,1), C(2,2), C(1,3), C(1,4), 255, 255, 255, 255, 255, 255, 255 },
+{ C(0,0), C(1,0), C(2,0), C(0,1), C(2,1), C(0,2), C(1,2), C(2,2), C(0,3), C(2,3), C(0,4), C(1,4), C(2,4), 255 },
+{ C(0,0), C(1,0), C(2,0), C(0,1), C(2,1), C(0,2), C(1,2), C(2,2), C(2,3), C(0,4), C(1,4), 255, 255, 255 }
 };
 
 
@@ -55,16 +52,20 @@ uint8_t figuresData[][14][2] = {
  * @param set is 1 or 0 to draw or clear it
  */
 void Figure::Draw(int figure,int x,int y,int set) {
-  for(int i=0;i<14;i++) {
-      if (figuresData[figure][i][0]==9) break;
-      if (
-        figuresData[figure][i][0]+x<13 && 
-        figuresData[figure][i][0]+x>=0 && 
-        figuresData[figure][i][1]+y<8 && 
-        figuresData[figure][i][1]+y>=0
-       ) {
-           LedSign::Set(figuresData[figure][i][0]+x,figuresData[figure][i][1]+y,set);
-       } 
+  const uint8_t* character = figuresData[figure];
+  for (;;) {
+    uint8_t data = pgm_read_byte_near(character++);
+    if (data == 255)
+      break;
+    uint8_t charCol = data >> 4, charRow = data & 15;
+    if (
+      charCol+x<DISPLAY_COLS && 
+      charCol+x>=0 && 
+      charRow+y<DISPLAY_ROWS && 
+      charRow+y>=0
+     ) {
+         LedSign::Set(charCol+x,charRow+y,set);
+     } 
   }
 }
 
@@ -78,16 +79,20 @@ void Figure::Draw(int figure,int x,int y,int set) {
  * @param set is 1 or 0 to draw or clear it
 */
 void Figure::Draw90(int figure,int x,int y,int set) {
-  for(int i=0;i<14;i++) {
-      if (figuresData[figure][i][0]==9) break;
-      if (
-        (5-figuresData[figure][i][1])+x<13 && 
-        (5-figuresData[figure][i][1])+x>=0 && 
-        figuresData[figure][i][0]+y<8 && 
-        figuresData[figure][i][0]+y>=0
-       ) {
-           LedSign::Set((5-figuresData[figure][i][1])+x,figuresData[figure][i][0]+y,set);
-       } 
+  const uint8_t* character = figuresData[figure];
+  for (;;) {
+    uint8_t data = pgm_read_byte_near(character++);
+    if (data == 255)
+      break;
+    uint8_t charCol = data >> 4, charRow = data & 15;
+    if (
+      (5-charRow)+x<DISPLAY_COLS && 
+      (5-charRow)+x>=0 && 
+      charCol+y<DISPLAY_ROWS && 
+      charCol+y>=0
+     ) {
+         LedSign::Set((5-charRow)+x,charCol+y,set);
+     } 
   }
 }
 
