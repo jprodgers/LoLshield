@@ -51,7 +51,7 @@ PROGMEM uint8_t figuresData[][14] = {
  * @param x,y coordinates, 
  * @param set is 1 or 0 to draw or clear it
  */
-void Figure::Draw(int figure,int x,int y,int set) {
+void Figure::Draw(uint8_t figure, int x, int y, uint8_t c) {
   const uint8_t* character = figuresData[figure];
   for (;;) {
     uint8_t data = pgm_read_byte_near(character++);
@@ -64,7 +64,7 @@ void Figure::Draw(int figure,int x,int y,int set) {
       charRow+y<DISPLAY_ROWS && 
       charRow+y>=0
      ) {
-         LedSign::Set(charCol+x,charRow+y,set);
+         LedSign::Set(charCol+x, charRow+y, c);
      } 
   }
 }
@@ -78,7 +78,7 @@ void Figure::Draw(int figure,int x,int y,int set) {
  * @param x,y coordinates, 
  * @param set is 1 or 0 to draw or clear it
 */
-void Figure::Draw90(int figure,int x,int y,int set) {
+void Figure::Draw90(uint8_t figure, int x, int y, uint8_t c) {
   const uint8_t* character = figuresData[figure];
   for (;;) {
     uint8_t data = pgm_read_byte_near(character++);
@@ -91,7 +91,7 @@ void Figure::Draw90(int figure,int x,int y,int set) {
       charCol+y<DISPLAY_ROWS && 
       charCol+y>=0
      ) {
-         LedSign::Set((5-charRow)+x,charCol+y,set);
+         LedSign::Set((5-charRow)+x, charCol+y, c);
      } 
   }
 }
@@ -105,25 +105,21 @@ void Figure::Draw90(int figure,int x,int y,int set) {
  * @param x is the coordinate where we put the top of the figure [0-13]
 */
 void Figure::Scroll90(unsigned long value,uint8_t x) {
-  int i,j,k;
-  uint8_t figures[]={ 
-    (value%10000000)/1000000, 
-    (value%1000000)/100000, 
-    (value%100000)/10000, 
-    (value%10000)/1000,
-    (value%1000)/100,
-    (value%100)/10,
-    (value%10)
-  };
-  j=0;
-  while (figures[j]==0 && j<6) j++;
+  int8_t i,j,k;
+  uint8_t figures[10];
+
+  j = 0;
+  do {
+    figures[j++] = value%10;
+    value/=10;
+  } while (value);
   
-  for(i=0;i<9+(7-j)*5;i++) {
-    for(k=j;k<=6;k++)
-      Figure::Draw90(figures[k],3,-i+9+4*(k-j) ,1);
+  for (i=9+4*j; i>=0; i--) {
+    for (k=j; k>0; k--)
+      Figure::Draw90(figures[k-1], x, i-4*k, SHADES-1);
     delay(100);
-    for(k=j;k<=6;k++)
-      Figure::Draw90(figures[k],3,-i+9+4*(k-j) ,0);
+    for (k=j; k>0; k--)
+      Figure::Draw90(figures[k-1], x, i-4*k, 0);
   }
 }
 

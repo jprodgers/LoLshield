@@ -29,13 +29,9 @@
 
 namespace Figure
 {
-
-extern void Draw(int figure,int x,int y,int set=1);
-
-extern void Draw90(int figure,int x,int y,int set=1);
-
-extern void Scroll90(unsigned long value,uint8_t x=3);
-
+  extern void Draw(uint8_t figure, int x, int y, uint8_t c=1);
+  extern void Draw90(uint8_t figure, int x, int y, uint8_t c=1);
+  extern void Scroll90(unsigned long value, uint8_t x=3);
 }
 
 #endif
