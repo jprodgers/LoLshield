@@ -117,14 +117,14 @@ const uint8_t* font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98
 #endif
 
 /* -----------------------------------------------------------------  */
-/** Draws a figure (0-9). You should call it with set=1, 
- * wait a little them call it again with set=0
+/** Draws a figure (0-9). You should call it with c=1, 
+ * wait a little them call it again with c=0
  * @param figure is the figure [0-9]
  * @param x,y coordinates, 
- * @param set is 1 or 0 to draw or clear it
+ * @param c is 1 or 0 to draw or clear it
  */
-uint8_t Font::Draw(unsigned char letter,int x,int y,int set) {
-  uint16_t maxx=0;
+uint8_t Font::Draw(unsigned char letter, uint8_t x, uint8_t y, uint8_t c) {
+  uint8_t maxx=0;
 
   uint8_t charCol;
   uint8_t charRow;
@@ -141,25 +141,22 @@ uint8_t Font::Draw(unsigned char letter,int x,int y,int set) {
     character = font[letter-fontMin];
 //  }
 
-  int i=0;
-
-  charCol = pgm_read_byte_near(character);
-  charRow = pgm_read_byte_near(character + 1);
+  charCol = pgm_read_byte_near(character++);
+  charRow = pgm_read_byte_near(character++);
 
   while (charRow!=9) {
     if (charCol>maxx) maxx=charCol;
     if (
-     charCol + x <14 && 
+     charCol + x <DISPLAY_COLS && 
      charCol + x >=0 && 
-     charRow + y <9 && 
+     charRow + y <DISPLAY_ROWS && 
      charRow + y >=0
     ) {
-        LedSign::Set(charCol + x, charRow+y, set);
+        LedSign::Set(charCol + x, charRow+y, c);
     } 
-    i+=2;
 
-    charCol = pgm_read_byte_near(character + i);
-    charRow = pgm_read_byte_near(character + 1 + i);
+    charCol = pgm_read_byte_near(character++);
+    charRow = pgm_read_byte_near(character++);
   }
   return maxx+2;
 }
@@ -169,10 +166,10 @@ uint8_t Font::Draw(unsigned char letter,int x,int y,int set) {
 /** Draw a figure in the other direction (rotated 90°)
  * @param figure is the figure [0-9]
  * @param x,y coordinates, 
- * @param set is 1 or 0 to draw or clear it
+ * @param c is 1 or 0 to draw or clear it
 */
-uint8_t Font::Draw90(unsigned char letter,int x,int y,int set) {
-  uint16_t maxx=0;
+uint8_t Font::Draw90(unsigned char letter, uint8_t x, uint8_t y, uint8_t c) {
+  uint8_t maxx=0;
 
   uint8_t charCol;
   uint8_t charRow;
@@ -189,28 +186,24 @@ uint8_t Font::Draw90(unsigned char letter,int x,int y,int set) {
     character = font[letter-fontMin];
 //  }
 
-  int i=0;
-
-  charCol = pgm_read_byte_near(character);
-  charRow = pgm_read_byte_near(character + 1);
+  charCol = pgm_read_byte_near(character++);
+  charRow = pgm_read_byte_near(character++);
 
   while (charRow!=9) {
     if (charCol>maxx) maxx=charCol;
     if (
-     charRow + x <14 && 
+     charRow + x <DISPLAY_COLS && 
      charRow + x >=0 && 
-     charCol + y <9 && 
+     charCol + y <DISPLAY_ROWS && 
      charCol + y >=0
     ) {
-        LedSign::Set(7 - charRow + x, charCol + y, set);
+        LedSign::Set(7 - charRow + x, charCol + y, c);
     } 
-    i+=2;
 
-    charCol = pgm_read_byte_near(character + i);
-    charRow = pgm_read_byte_near(character + 1 + i);
+    charCol = pgm_read_byte_near(character++);
+    charRow = pgm_read_byte_near(character++);
   }
   return maxx+2;
-
 }
 
 
