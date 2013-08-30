@@ -96,7 +96,34 @@ typedef struct prescalerInfo {
     uint8_t tccr2;
 };
 
-prescalerInfo slowPrescaler, fastPrescaler;
+const prescalerInfo
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
+#   if F_CPU < 8000000UL
+        fastPrescaler = { 8, _BV(CS20) },		// 1
+        slowPrescaler = { 1, _BV(CS21) };		// 8
+#   else
+        fastPrescaler = { 4, _BV(CS21) },		// 8
+        slowPrescaler = { 1, _BV(CS21) | _BV(CS20) };	// 32
+#   endif
+#elif defined (__AVR_ATmega128__)
+#   if F_CPU < 8000000UL
+        fastPrescaler = { 8, _BV(CS20) },		// 1
+        slowPrescaler = { 1, _BV(CS21) };		// 8
+#   else
+        fastPrescaler = { 8, _BV(CS21) },		// 8
+        slowPrescaler = { 1, _BV(CS21) | _BV(CS20) };	// 64
+#   endif
+#elif defined (__AVR_ATmega32U4__)
+#   if F_CPU < 8000000UL
+        fastPrescaler = { 8, _BV(WGM12) | _BV(CS10) },			// 1
+        slowPrescaler = { 1, _BV(WGM12) | _BV(CS11) };			// 8
+#   else
+        fastPrescaler = { 8, _BV(WGM12) | _BV(CS11) },			// 8
+        slowPrescaler = { 1, _BV(WGM12) | _BV(CS11) | _BV(CS10) };	// 64
+#   endif
+#else
+#   error no support for this chip
+#endif
 
 static bool initialized = false;
 
@@ -225,39 +252,6 @@ void LedSign::Init(uint8_t mode)
     OCR1A = 256;
 #endif
 	
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
-    if (F_CPU < 8000000UL) {
-        fastPrescaler.tccr2 = _BV(CS20);		// 1
-        slowPrescaler.tccr2 = _BV(CS21);		// 8
-        fastPrescaler.relativeSpeed = 8;
-    } else { // F_CPU >= 8Mhz, prescaler set to 8
-        fastPrescaler.tccr2 = _BV(CS21);		// 8
-        slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 32
-        fastPrescaler.relativeSpeed = 4;
-    }
-#elif defined (__AVR_ATmega128__)
-    if (F_CPU < 8000000UL) {	// prescaler set to 8
-        fastPrescaler.tccr2 = _BV(CS20);		// 1
-        slowPrescaler.tccr2 = _BV(CS21);		// 8
-        fastPrescaler.relativeSpeed = 8;
-    } else { // F_CPU >= 8Mhz, prescaler set to 8
-        fastPrescaler.tccr2 = _BV(CS21);		// 8
-        slowPrescaler.tccr2 = _BV(CS21) | _BV(CS20);	// 64
-        fastPrescaler.relativeSpeed = 8;
-    }
-#elif defined (__AVR_ATmega32U4__)
-    if (F_CPU < 8000000UL) {	// prescaler set to 8
-        fastPrescaler.tccr2 = _BV(WGM12) | _BV(CS10);                // 1
-        slowPrescaler.tccr2 = _BV(WGM12) | _BV(CS11);                // 8
-        fastPrescaler.relativeSpeed = 8;
-    } else { // F_CPU >= 8Mhz, prescaler set to 8
-        fastPrescaler.tccr2 = _BV(WGM12) | _BV(CS11);                // 8
-        slowPrescaler.tccr2 = _BV(WGM12) | _BV(CS11) | _BV(CS10);    // 64
-        fastPrescaler.relativeSpeed = 8;
-    }
-#endif
-    slowPrescaler.relativeSpeed = 1;
-
     // Record whether we are in single or double buffer mode
     displayMode = mode;
 #ifdef DOUBLE_BUFFER
