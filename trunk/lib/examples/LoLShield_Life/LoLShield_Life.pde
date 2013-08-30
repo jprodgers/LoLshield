@@ -41,6 +41,7 @@ int geck = 0;                 //Counter for re-seeding
 
 void setup() {
   LedSign::Init();            //Initilizes the LoL Shield
+  randomSeed(analogRead(5));
   seedWorld();
 }
 
@@ -83,7 +84,7 @@ void loop() {
 
   //Counts and then checks for re-seeding
   //Otherwise the display will die out at some point
-  if (++geck >= RESEEDRATE || boring >= 5) {
+  if (boring >= 5 || ++geck >= RESEEDRATE) {
     geck = 0;
     seedWorld();
   }
@@ -93,7 +94,6 @@ void loop() {
 
 //Re-seeds based off of RESEEDRATE
 void seedWorld(){
-  randomSeed(analogRead(5));
   for (byte i = 0; i < SIZEX; i++) {
     for (byte j = 0; j < SIZEY; j++) {
       if (random(100) < density)
