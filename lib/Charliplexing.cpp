@@ -41,41 +41,32 @@
 #include "Charliplexing.h"
 
 
+/* -----------------------------------------------------------------  */
+/// Determines whether the display is in single or double buffer mode
+uint8_t displayMode = SINGLE_BUFFER;
+
+
+/** Table for the LED multiplexing cycles
+ * Each frame is made of 24 bytes (for the 12 display cycles)
+ * There are SHADES-1 frames per buffer in grayscale mode (one for each
+ * brightness) and twice that many to support double-buffered grayscale.
+ */
 struct videoPage {
     uint16_t pixels[12*(SHADES-1)];
 }; 
 
-/* -----------------------------------------------------------------  */
-/** Table for the LED multiplexing cycles
- * Each frame is made of 24 bytes (for the 24 display cycles)
- * There are SHADES frames per buffer in grayscale mode (one for each brigtness)
- * and twice that many to support double-buffered grayscale.
- */
-#ifdef DOUBLE_BUFFER
-videoPage leds[2];
-#else
-videoPage leds[1];
-#endif
-
-/// Determines whether the display is in single or double buffer mode
-uint8_t displayMode = SINGLE_BUFFER;
-
-/// Flag indicating that the display page should be flipped as soon as the
-/// current frame is displayed
+/// Display buffers; only account two if DOUBLE_BUFFER is configured
 #ifdef DOUBLE_BUFFER
 volatile boolean videoFlipPage = false;
+videoPage leds[2], *displayBuffer, *workBuffer;
+#else
+videoPage leds;
+#define displayBuffer (&leds)
+#define workBuffer (&leds)
 #endif
 
-/// Pointer to the buffer that is currently being displayed
-videoPage* displayBuffer;
+/// Pointer inside the buffer that is currently being displayed
 uint16_t* displayPointer;
-
-/// Pointer to the buffer that should currently be drawn to
-videoPage* workBuffer;
-
-/// Flag indicating that the timer buffer should be flipped as soon as the
-/// current frame is displayed
-volatile boolean videoFlipTimer = false;
 
 
 // Timer counts to display each page for, plus off time
@@ -84,11 +75,10 @@ typedef struct timerInfo {
     uint8_t prescaler[SHADES];
 };
 
-// Double buffer the timing information, of course.
-timerInfo* frontTimer;
-timerInfo* backTimer;
+/// Timing buffers (see SetBrightness())
+volatile boolean videoFlipTimer = false;
+timerInfo timer[2], *frontTimer, *backTimer;
 
-timerInfo timer[2];
 
 // Record a slow and fast prescaler for later use
 typedef struct prescalerInfo {
@@ -125,24 +115,25 @@ const prescalerInfo
 #   error no support for this chip
 #endif
 
+
 static bool initialized = false;
+
 
 /// Uncomment to set analog pin 5 high during interrupts, so that an
 /// oscilloscope can be used to measure the processor time taken by it
 #undef MEASURE_ISR_TIME
 #ifdef MEASURE_ISR_TIME
-uint8_t statusPIN = 19;
+const uint8_t statusPIN = 19;
 #endif
-
-typedef struct LEDPosition {
-    uint8_t high;
-    uint8_t cycle;
-};
 
 
 /* -----------------------------------------------------------------  */
 /** Table for LED Position in leds[] ram table
  */
+typedef struct LEDPosition {
+    uint8_t high;
+    uint8_t cycle;
+};
 
 #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
 #define	P(pin)  ((pin < 5) ? (pin + 1) : (pin == 5) ? (2) : (pin))
@@ -177,6 +168,7 @@ const LEDPosition PROGMEM ledMap[126] = {
     L( 5, 6), L( 5, 7), L( 5, 8), L( 5, 9), L( 5,10), L( 5,11), L( 5,12), L( 5,13),
     L( 5, 4), L( 4, 5), L( 5, 3), L( 3, 5), L( 5, 2), L( 2, 5),
 };
+#undef P(pin)
 #undef L(high, low)
 
 /*
@@ -254,39 +246,31 @@ void LedSign::Init(uint8_t mode)
 	
     // Record whether we are in single or double buffer mode
     displayMode = mode;
+
 #ifdef DOUBLE_BUFFER
     videoFlipPage = false;
-#endif
-
-    // Point the display buffer to the first physical buffer
-    displayBuffer = &leds[0];
-    displayPointer = displayBuffer->pixels;
-
-#ifdef DOUBLE_BUFFER
     // If we are in single buffered mode, point the work buffer
     // at the same physical buffer as the display buffer.  Otherwise,
     // point it at the second physical buffer.
-    if( displayMode & DOUBLE_BUFFER ) {
+    if (displayMode & DOUBLE_BUFFER)
         workBuffer = &leds[1];
-    } else {
-        workBuffer = displayBuffer;
-    }
-#else
-    workBuffer = displayBuffer;
+    else
+        workBuffer = &leds[0];
+    displayBuffer = &leds[0];
 #endif
 
-    // Set up the timer buffering
-    frontTimer = &timer[0];
-    backTimer = &timer[1];
+    // Point the display buffer to the first physical buffer
+    displayPointer = displayBuffer->pixels;
 
+    // Set up the timer buffering
     videoFlipTimer = false;
+    backTimer = &timer[1];
+    frontTimer = &timer[0];
+
     SetBrightness(127);
 	
     // Clear the buffer and display it
     LedSign::Clear(0);
-#ifdef DOUBLE_BUFFER
-    LedSign::Flip(false);
-#endif
 
     // Then start the display
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
@@ -307,17 +291,6 @@ void LedSign::Init(uint8_t mode)
     TCNT1 = 255;
 #endif
 
-#ifdef DOUBLE_BUFFER
-    // If we are in double-buffer mode, wait until the display flips before we
-    // return
-    if (displayMode & DOUBLE_BUFFER)
-    {
-        while (videoFlipPage) {
-            delay(1);
-        }
-    }
-#endif
-
     initialized = true;
 }
 
@@ -336,9 +309,9 @@ void LedSign::Flip(bool blocking)
         videoFlipPage = true;
 
         // If we are blocking, sit here until the page flips.
-        while (blocking && videoFlipPage) {
-            delay(1);
-        }
+	if (blocking)
+            while (videoFlipPage)
+                ;
     }
 }
 #endif
@@ -447,9 +420,8 @@ void LedSign::SetBrightness(uint8_t brightness)
 #endif
 
     // Wait until the previous brightness request goes through
-    while( videoFlipTimer ) {
-        delay(1);
-    }
+    while (videoFlipTimer)
+        ;
 
     // Compute on time for each of the pages
     // Use the fast timer; slow timer is only useful for < 3 shades.
