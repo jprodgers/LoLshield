@@ -42,8 +42,7 @@ typedef struct pieceView {
  * One Tetris piece object, made of one to four views.
  */
 typedef struct piece {
-  pieceView_t** views;
-  uint8_t numViews;
+  pieceView_t views[4];
 } piece_t;
 
 /**
