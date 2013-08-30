@@ -68,7 +68,7 @@ const uint8_t PROGMEM letters_66[] = { 0,1, 0,2, 0,3, 0,4, 0,5, 0,6, 0,7, 1,1, 1
 const uint8_t PROGMEM letters_52[] = { 0,4, 0,5, 1,3, 1,5, 2,2, 2,5, 3,1, 3,2, 3,3, 3,4, 3,5, 3,6, 3,7, 4,5, 9,9 };
 const uint8_t PROGMEM letters_55[] = { 0,1, 1,1, 2,1, 2,5, 2,6, 2,7, 3,1, 3,3, 3,4, 4,1, 4,2, 9,9 };
 
-const uint8_t* font[] = {  letters_33 /*!*/,  0,  0,  0,  0,  0,  letters_39 /*'*/,  0,  0,  0,  0,  letters_44 /*,*/,  0,  0,  0,  
+const uint8_t* const font[] = {  letters_33 /*!*/,  0,  0,  0,  0,  0,  letters_39 /*'*/,  0,  0,  0,  0,  letters_44 /*,*/,  0,  0,  0,  
 letters_48 /*0*/,  letters_49 /*1*/,  letters_50 /*2*/,  letters_51 /*3*/,  letters_52 /*4*/,  letters_53 /*5*/,  
 letters_54 /*6*/,  letters_55 /*7*/,  letters_56 /*8*/,  letters_57 /*9*/,  0,  0,  0,  0,  0,  0,  0,  letters_65 /*A*/,  
 letters_66 /*B*/,  letters_67 /*C*/,  letters_68 /*D*/,  letters_69 /*E*/,  letters_70 /*F*/,  letters_71 /*G*/,  
@@ -79,8 +79,8 @@ letters_90 /*Z*/
 };
 
 
-uint16_t fontMin=33;
-uint16_t fontMax=90;
+const unsigned char fontMin=33;
+const unsigned char fontMax=90;
 
 #if 0
 
@@ -111,7 +111,7 @@ const uint8_t PROGMEM letters_99[] = { 0,5, 0,6, 1,4, 1,7, 2,4, 2,7, 3,4, 3,7, 9
 const uint8_t PROGMEM letters_106[] = { 0,8, 1,2, 1,4, 1,5, 1,6, 1,7, 1,8, 9,9 };
 const uint8_t PROGMEM letters_97[] = { 0,6, 0,7, 1,3, 1,5, 1,7, 2,3, 2,5, 2,7, 3,4, 3,5, 3,6, 3,7, 9,9 };
 
-const uint8_t* font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98 /*b*/,  letters_99 /*c*/,  letters_100 /*d*/,  letters_101 /*e*/,  letters_102 /*f*/,  letters_103 /*g*/,  letters_104 /*h*/,  letters_105 /*i*/,  letters_106 /*j*/,  letters_107 /*k*/,  letters_108 /*l*/,  letters_109 /*m*/,  letters_110 /*n*/,  letters_111 /*o*/,  letters_112 /*p*/,  letters_113 /*q*/,  letters_114 /*r*/,  letters_115 /*s*/,  letters_116 /*t*/,  letters_117 /*u*/,  letters_118 /*v*/,  letters_119 /*w*/,  letters_120 /*x*/ };
+const uint8_t* const font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98 /*b*/,  letters_99 /*c*/,  letters_100 /*d*/,  letters_101 /*e*/,  letters_102 /*f*/,  letters_103 /*g*/,  letters_104 /*h*/,  letters_105 /*i*/,  letters_106 /*j*/,  letters_107 /*k*/,  letters_108 /*l*/,  letters_109 /*m*/,  letters_110 /*n*/,  letters_111 /*o*/,  letters_112 /*p*/,  letters_113 /*q*/,  letters_114 /*r*/,  letters_115 /*s*/,  letters_116 /*t*/,  letters_117 /*u*/,  letters_118 /*v*/,  letters_119 /*w*/,  letters_120 /*x*/ };
 */
 
 #endif
