@@ -43,67 +43,67 @@ const uint8_t NUM_LEVEL_STEPS = 4;
 const uint32_t LEVEL_STEPS[NUM_LEVEL_STEPS] = {200,600,1800,5400};
 
 const piece_t pieces[7] = {
-  {{
+  {1, {
     // The single view of the square piece :
     // 00
     // 00
-    {{{1,0}, {2,0}, {1,1}, {2,1}}},
-    {{{1,0}, {2,0}, {1,1}, {2,1}}},
-    {{{1,0}, {2,0}, {1,1}, {2,1}}},
-    {{{1,0}, {2,0}, {1,1}, {2,1}}},
+    {{{1,1}, {2,1}, {1,2}, {2,2}}},
+    {{{1,1}, {2,1}, {1,2}, {2,2}}},
+    {{{1,1}, {2,1}, {1,2}, {2,2}}},
+    {{{1,1}, {2,1}, {1,2}, {2,2}}},
   }},
-  {{
+  {2, {
     // The two views of the bar piece :
     // 0000
-    {{{0,1}, {1,1}, {2,1}, {3,1}}},
-    {{{1,0}, {1,1}, {1,2}, {1,3}}},
-    {{{0,1}, {1,1}, {2,1}, {3,1}}},
-    {{{1,0}, {1,1}, {1,2}, {1,3}}},
+    {{{0,2}, {1,2}, {2,2}, {3,2}}},
+    {{{2,0}, {2,1}, {2,2}, {2,3}}},
+    {{{0,2}, {1,2}, {2,2}, {3,2}}},
+    {{{2,0}, {2,1}, {2,2}, {2,3}}},
   }},
-  {{
+  {1, {
     // The two views of the first S :
     // 00
     //  00
-    {{{0,0}, {1,0}, {1,1}, {2,1}}},
-    {{{2,0}, {1,1}, {2,1}, {1,2}}},
-    {{{0,0}, {1,0}, {1,1}, {2,1}}},
-    {{{2,0}, {1,1}, {2,1}, {1,2}}},
+    {{{0,1}, {1,1}, {1,2}, {2,2}}},
+    {{{1,1}, {1,2}, {2,0}, {2,1}}},
+    {{{0,1}, {1,1}, {1,2}, {2,2}}},
+    {{{1,1}, {1,2}, {2,0}, {2,1}}},
   }},
-  {{
+  {1, {
     // The two views of the second S :
     //  00
     // 00
-    {{{1,0}, {2,0}, {0,1}, {1,1}}},
+    {{{0,2}, {1,1}, {1,2}, {2,1}}},
     {{{0,0}, {0,1}, {1,1}, {1,2}}},
-    {{{1,0}, {2,0}, {0,1}, {1,1}}},
+    {{{0,2}, {1,1}, {1,2}, {2,1}}},
     {{{0,0}, {0,1}, {1,1}, {1,2}}},
   }},
-  {{
+  {1, {
     // The four views of the first L :
     // 000
     // 0
-    {{{0,1}, {1,1}, {2,1}, {0,2}}},
-    {{{1,0}, {1,1}, {1,2}, {2,2}}},
-    {{{2,0}, {0,1}, {1,1}, {2,1}}},
+    {{{0,1}, {0,2}, {1,1}, {2,1}}},
     {{{0,0}, {1,0}, {1,1}, {1,2}}},
+    {{{0,1}, {1,1}, {2,0}, {2,1}}},
+    {{{1,0}, {1,1}, {1,2}, {2,2}}},
   }},
-  {{
-    // The four views of the T :
+  {1, {
+    // The four views of the second L :
     // 000
     //   0
     {{{0,1}, {1,1}, {2,1}, {2,2}}},
-    {{{1,0}, {2,0}, {1,1}, {1,2}}},
+    {{{1,0}, {1,1}, {1,2}, {2,0}}},
     {{{0,0}, {0,1}, {1,1}, {2,1}}},
-    {{{1,0}, {1,1}, {1,2}, {0,2}}},
+    {{{0,2}, {1,0}, {1,1}, {1,2}}},
   }},
-  {{
-    // The four views of the second L :
+  {1, {
+    // The four views of the T :
     // 000
     //  0
-    {{{0,1}, {1,1}, {2,1}, {1,2}}},
-    {{{1,0}, {1,1}, {2,1}, {1,2}}},
-    {{{1,0}, {0,1}, {1,1}, {2,1}}},
-    {{{1,0}, {0,1}, {1,1}, {1,2}}},
+    {{{0,1}, {1,1}, {1,2}, {2,1}}},
+    {{{1,0}, {1,1}, {1,2}, {2,1}}},
+    {{{0,1}, {1,0}, {1,1}, {2,1}}},
+    {{{0,1}, {1,0}, {1,1}, {1,2}}},
   }},
 };
 
@@ -118,13 +118,13 @@ pos_t position;
  * @param position the position and view of the piece to draw or remove.
  * @param set 1 or 0 to draw or remove the piece.
  */
-void switchPiece(const piece_t* piece, const pos_t& position, int set=1) {
+void switchPiece(const piece_t* piece, const pos_t& position, uint8_t c=1) {
   for(uint8_t i=0;i<4;i++) {
     coord_t element = piece->views[position.view].elements[i];
-    LedSign::Set(
-        13-(element.y+position.coord.y),
-        element.x+position.coord.x,
-        set);
+    int8_t eltXPos = element.x+position.coord.x;
+    int8_t eltYPos = element.y+position.coord.y;
+    if (eltYPos>=0)
+      LedSign::Set(13-eltYPos, eltXPos, c);
   }
 }
 
@@ -138,11 +138,9 @@ void switchPiece(const piece_t* piece, const pos_t& position, int set=1) {
  *               This parameter MUST be greater or equal than top.
  */
 void redrawLines(uint8_t top, uint8_t bottom) {
-  for (int y=top; y<=bottom; y++) {
-    for (int x=0; x<GRID_WIDTH; x++) {
+  for (uint8_t y=top; y<=bottom; y++)
+    for (uint8_t x=0; x<GRID_WIDTH; x++)
       LedSign::Set(13-y,x,playGrid[y][x]);
-    }
-  }
 }
 
 
@@ -151,12 +149,9 @@ void redrawLines(uint8_t top, uint8_t bottom) {
  * End of the game, draw the score using a scroll.
  */
 void endGame() {
-  uint8_t u,d,c;
-
-  for(int x=13;x>=0;x--) {
-    for(int y=0;y<=8;y++) { 
-      LedSign::Set(x,y,0);
-    }
+  for(uint8_t x=0;x<=13;x++) {
+    for(uint8_t y=0;y<=8;y++)
+      LedSign::Set(13-x,y,0);
     delay(100);
   }
   // Draw the score and scroll it
@@ -188,19 +183,16 @@ boolean checkPieceMove(const piece_t* piece, const pos_t& position) {
   for (uint8_t i=0; i<4; i++) {
     coord_t element = piece->views[position.view].elements[i];
     // Check x boundaries.
-    uint8_t eltXPos = element.x+position.coord.x;
-    if (eltXPos>8 || eltXPos<0) {
+    int8_t eltXPos = element.x+position.coord.x;
+    if (eltXPos>8 || eltXPos<0)
       isOk = false;
-    }
     // Check y boundaries.
-    uint8_t eltYPos = element.y+position.coord.y;
-    if (eltYPos>13) {
+    int8_t eltYPos = element.y+position.coord.y;
+    if (eltYPos>13)
       isOk = false;
-    }
     // Check collisions in grid.
-    if (playGrid[eltYPos][eltXPos]) {
+    if (eltYPos>=0 && playGrid[eltYPos][eltXPos])
       isOk = false;
-    } 
   }
   
   return isOk;
@@ -218,7 +210,7 @@ void playerMovePiece()
 
   // First try rotating the piece if requested.
   // Ensure the player released the rotation button before doing a second one.
-  static int status=0;
+  static byte status=0;
   if (status == 0) {
     if (analogRead(4)>1000) {
       status = 1;
@@ -288,9 +280,10 @@ void timerPieceDown(uint32_t& count) {
       // Drop the piece on the grid.
       for (uint8_t i=0; i<4; i++) {
         coord_t element = currentPiece->views[position.view].elements[i];
-        uint8_t eltXPos = element.x+position.coord.x;
-        uint8_t eltYPos = element.y+position.coord.y;
-        playGrid[eltYPos][eltXPos] = true;
+        int8_t eltXPos = element.x+position.coord.x;
+        int8_t eltYPos = element.y+position.coord.y;
+        if (eltYPos>=0)
+          playGrid[eltYPos][eltXPos] = true;
       }
  
       processEndPiece();
@@ -376,12 +369,12 @@ void processEndPiece() {
  * Start dropping a new randomly chosen piece.
  */
 void nextPiece() {
-  position.coord.x = 3;
-  position.coord.y = 0;
-  position.view = random(0,3);
-
   currentPiece = &pieces[random(0,7)];
   
+  position.coord.x = 3;
+  position.coord.y = 0-currentPiece->startrow;
+  position.view = 0;
+
   if (!checkPieceMove(currentPiece, position)) {
     endGame();
     startGame();
