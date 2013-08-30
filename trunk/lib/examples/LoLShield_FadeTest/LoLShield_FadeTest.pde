@@ -44,8 +44,8 @@ void loop()                     // run over and over again
   static unsigned long start = 0;
   unsigned long end;
 
-  for (int row = 0; row < 9; row++)
-    for (int col = 0; col < 14; col++)
+  for (int row = 0; row < DISPLAY_ROWS; row++)
+    for (int col = 0; col < DISPLAY_COLS; col++)
       LedSign::Set(col, row, (row+col + i)%SHADES);
 
   LedSign::Flip(true);
@@ -63,7 +63,7 @@ void loop()                     // run over and over again
         LedSign::Clear(0);
         LedSign::Flip();
         delay(500);
-        LedSign::Clear(SHADES);
+        LedSign::Clear(SHADES-1);
         LedSign::Flip();
         delay(500);
         // re-set timeout
