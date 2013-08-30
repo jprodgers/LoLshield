@@ -523,10 +523,10 @@ ISR(TIMER1_COMPA_vect) {
 
     if (page < SHADES - 1) {
         const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
-        DDRD  = dir;
         PORTD = data;
-        DDRB  = (dir >> 8);
 	PORTB = (data >> 8);
+        DDRD  = dir;
+        DDRB  = (dir >> 8);
     }
 #endif
 
