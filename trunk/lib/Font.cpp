@@ -123,7 +123,7 @@ const uint8_t* font2[] = { 0,  0,  0,  0,  0,  0,  letters_97 /*a*/,  letters_98
  * @param x,y coordinates, 
  * @param c is 1 or 0 to draw or clear it
  */
-uint8_t Font::Draw(unsigned char letter, uint8_t x, uint8_t y, uint8_t c) {
+uint8_t Font::Draw(unsigned char letter, int x, int y, uint8_t c) {
   uint8_t maxx=0;
 
   uint8_t charCol;
@@ -168,7 +168,7 @@ uint8_t Font::Draw(unsigned char letter, uint8_t x, uint8_t y, uint8_t c) {
  * @param x,y coordinates, 
  * @param c is 1 or 0 to draw or clear it
 */
-uint8_t Font::Draw90(unsigned char letter, uint8_t x, uint8_t y, uint8_t c) {
+uint8_t Font::Draw90(unsigned char letter, int x, int y, uint8_t c) {
   uint8_t maxx=0;
 
   uint8_t charCol;
