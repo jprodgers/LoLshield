@@ -31,11 +31,15 @@ typedef struct coord {
   int8_t y;
 } coord_t;
 
+typedef struct coordPacked {
+  unsigned x:2, y:2;
+} coordPacked_t;
+
 /**
  * One piece view. Each Tetris piece may have one to four views.
  */
 typedef struct pieceView {
-  coord_t elements[4];
+  coordPacked_t elements[4];
 } pieceView_t;
 
 /**
