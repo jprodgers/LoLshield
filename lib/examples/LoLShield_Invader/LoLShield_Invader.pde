@@ -53,16 +53,16 @@
 /** The score of the user (number of points = speed of each killed ennemy - number of ennemies missed) */
 int score=0;
 /** Position of the ship between 1 & 7 */
-uint8_t shippos=4;
+byte shippos=4;
 /** Number of lives of the user */
-uint8_t lives;
+byte lives;
 
 /** Position of the bullets of the ship, [0]=x [1]=y */
-uint8_t firepos[9][2]={
+byte firepos[9][2]={
   {0,0},  {0,0},  {0,0},  {0,0},  {0,0},  {0,0},  {0,0},  {0,0},  {0,0}
 };
 /** Position and speed of the ennemies [0]=x [1]=y [2]=speed [3]=speed counter */
-uint8_t ennemypos[8][4]={
+byte ennemypos[8][4]={
   {0,0,0,0},  {0,0,0,0},  {0,0,0,0},  {0,0,0,0},  {0,0,0,0},  {0,0,0,0},  {0,0,0,0},  {0,0,0,0}
 };
 
@@ -71,11 +71,11 @@ uint8_t ennemypos[8][4]={
 /** Draw the ship at its current position.
  * @param set 1 or 0 to set or clear the led.
  */
-void drawShip(int set=1) {
-    LedSign::Set(0,shippos-1,set); 
-    LedSign::Set(0,shippos  ,set); 
-    LedSign::Set(0,shippos+1,set); 
-    LedSign::Set(1,shippos  ,set); 
+void drawShip(uint8_t c=1) {
+    LedSign::Set(0,shippos-1,c); 
+    LedSign::Set(0,shippos  ,c); 
+    LedSign::Set(0,shippos+1,c); 
+    LedSign::Set(1,shippos  ,c); 
 }
 
 
@@ -83,7 +83,7 @@ void drawShip(int set=1) {
 /** Draw the number of lives remaining at the top left of the screen
  */
 void drawLives() {
-  for(int i=0;i<STARTLIVES;i++) {
+  for(byte i=0;i<STARTLIVES;i++) {
     LedSign::Set(13-i,0,(i<lives)?1:0); 
   }
 }
@@ -94,13 +94,13 @@ void drawLives() {
 /** end of the game, draw the Scores using a scrolling
  */
 void endGame() {
-  for(int x=4;x<=8;x++) 
-  for(int y=0;y<=8;y++) 
-    LedSign::Set(x,y,0);
+  for(byte x=4;x<=8;x++) 
+    for(byte y=0;y<=8;y++) 
+      LedSign::Set(x,y,0);
   
   Figure::Scroll90(score);
   
-  for(int i=0;i<30;i++) {
+  for(byte i=0;i<30;i++) {
    drawShip(0);
    delay(5*(30-i));
    drawShip(0);
@@ -115,10 +115,10 @@ void endGame() {
  */
 void initGame() {
    lives=STARTLIVES;
-   LedSign::Clear();
    score=0;
-   drawLives();
    shippos=4;
+   LedSign::Clear();
+   drawLives();
    drawShip();
 }
 
@@ -135,9 +135,8 @@ void moveShip()
   if (newshpos<1) newshpos=1;
   if (newshpos!=shippos) {
     drawShip(0);
-    for(int i=0;i<8;i++) {
+    for(byte i=0;i<8;i++)
       LedSign::Set(0,i,0);
-    }
     shippos=newshpos;
     drawShip(1);
   }
@@ -151,14 +150,13 @@ void moveShip()
  */
 void fireShip()
 {
-  static int status=0;
-  int i;
+  static byte status=0;
   if (status==0) {
     // Ship may fire 10 times (not more...)
     if (analogRead(4)>1000) {
         // FIRE ! 
         status=1;
-        for(i=0;i<MAXFIRE;i++) {
+        for(byte i=0;i<MAXFIRE;i++) {
           if (firepos[i][0]==0) {
               firepos[i][0]=2; firepos[i][1]=shippos;
               break;
@@ -175,7 +173,6 @@ void fireShip()
 /** Crash : called when an ennemy touched the ship (failure!)
  */
 void crash() {
-  int i;
    drawShip(1);
    delay(150);
    drawShip(0);
@@ -184,26 +181,24 @@ void crash() {
    delay(150);
    drawShip(0);
    delay(150);
-   for(i=0;i<MAXENNEMIES;i++) {
+
+   for(byte i=0;i<MAXENNEMIES;i++)
      if (ennemypos[i][0]!=0) {
        LedSign::Set(ennemypos[i][0],ennemypos[i][1],0);
+       ennemypos[i][0]=0;
      }
-   }
+   for(byte i=0;i<MAXFIRE;i++)
+     firepos[i][0]=0;
 
    lives--;
    if (lives==0) {
      endGame();
      initGame();
+   } else {
+     LedSign::Clear();
+     drawLives();
+     drawShip();   
    }
-   for(i=0;i<MAXENNEMIES;i++)  {
-     ennemypos[i][0]=0;
-   }
-   for(i=0;i<MAXFIRE;i++)  {
-     firepos[i][0]=0;
-   }
-   LedSign::Clear();
-   drawLives();
-   drawShip();   
 }
 
 
@@ -212,10 +207,9 @@ void crash() {
  */
 void addEnnemies()
 {
-  int i;
   if (random(0,ENNEMIESRATE)==0) {
     // ENNEMY COMING !
-        for(i=0;i<MAXENNEMIES;i++) {
+        for(byte i=0;i<MAXENNEMIES;i++) {
           if (ennemypos[i][0]==0) {
               ennemypos[i][0]=13; ennemypos[i][1]=random(1,8);
               ennemypos[i][2]=random(2,5); // Speed of ennemies between 1 and 5 (5=slower)
@@ -232,10 +226,7 @@ void addEnnemies()
  */
 void moveEnnemies()
 {
-  static int cnt=0;
-  int i;
-  cnt++; 
-  for(i=0;i<MAXENNEMIES;i++) {
+  for(byte i=0;i<MAXENNEMIES;i++) {
     if (ennemypos[i][0]!=0) {
       ennemypos[i][3]++;
       if (ennemypos[i][2]==ennemypos[i][3]) {
@@ -270,13 +261,12 @@ void moveEnnemies()
  */
 void moveFires()
 {
-  int i,j;
-  for(i=0;i<MAXFIRE;i++) {
+  for(byte i=0;i<MAXFIRE;i++) {
     if (firepos[i][0]!=0) {
       LedSign::Set(firepos[i][0],firepos[i][1],0);       
       firepos[i][0]++;
       // Let's detect collision with ennemies : 
-      for(j=0;j<MAXENNEMIES;j++) {
+      for(byte j=0;j<MAXENNEMIES;j++) {
         if (ennemypos[j][0]!=0) {
           if ((ennemypos[j][0]==firepos[i][0] || ennemypos[j][0]==firepos[i][0]+1) && ennemypos[j][1]==firepos[i][1]) {  
               // Ennemy destroyed
@@ -315,30 +305,10 @@ void setup()                    // run once, when the sketch starts
  */
 void loop()                     // run over and over again
 {
-
-/*
-char test[]="COUCOU !  SALUT !";
-
-    int8_t x=0,x2=0;
-  for(int8_t j=13;j>-100;j--) {
-    x=j;
-    LedSign::Clear();
-    for(int i=0;i<17;i++) {
-      x2=Font::Draw(test[i],x,0);
-      x+=x2;
-      if (x>=13) break;
-    }  
-    delay(100);
-  }
-  delay(10000);
-*/
-moveShip();
+  moveShip();
   fireShip();
   moveFires();
   moveEnnemies();
   addEnnemies();
   delay(100);
-
 }
-
-
