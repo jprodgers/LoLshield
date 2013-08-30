@@ -47,7 +47,7 @@ with our RAM. You cannot change the array during run-time, only when you
 upload to the Arduino. You will need to pull it out of ROM, which is covered
 below. If you want it to stay in RAM, just delete PROGMEM
 */
-uint16_t BitMap[][9] PROGMEM = {
+PROGMEM const uint16_t BitMap[][9] = {
 //Diaganal swipe across the screen
 {1, 0, 0, 0, 0, 0, 0, 0, 0},
 {3, 1, 0, 0, 0, 0, 0, 0, 0},
