@@ -360,11 +360,12 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
         c = SHADES-1;
 #endif
 
-    uint16_t mask = 1 << pgm_read_byte_near(&ledMap[x+y*DISPLAY_COLS].high);
-    uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*DISPLAY_COLS].cycle);
+    const LEDPosition *map = &ledMap[x+y*DISPLAY_COLS];
+    uint16_t mask = 1 << pgm_read_byte_near(&map->high);
+    uint8_t cycle = pgm_read_byte_near(&map->cycle);
 
     uint16_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
-    int i;
+    uint8_t i;
     for (i = 0; i < c; i++)
 	*p++ |= mask;   // ON;
     for (; i < SHADES-1; i++)
