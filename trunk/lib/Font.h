@@ -27,6 +27,8 @@
 
 #include <inttypes.h>
 
+#undef LOWERCASE
+
 namespace Font
 {
   extern uint8_t Draw(unsigned char letter, int x, int y, uint8_t c=1);
