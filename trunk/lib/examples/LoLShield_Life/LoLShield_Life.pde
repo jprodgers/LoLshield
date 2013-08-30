@@ -45,6 +45,9 @@ void setup() {
 }
 
 void loop() {
+  static byte boring = 0;
+  byte changed = 0;
+
   // Birth and death cycle 
   for (byte x = 0; x < SIZEX; x++) { 
     for (byte y = 0; y < SIZEY; y++) {
@@ -56,9 +59,11 @@ void loop() {
       if (count == 3 && !alive) {
         // A new cell is born
         alive = 1; 
+        ++changed;
       } else if ((count < 2 || count > 3) && alive) {
         // Cell dies
         alive = 0;
+        ++changed;
       }
       world[1][x][y] = alive;
     }
@@ -71,9 +76,14 @@ void loop() {
     }
   }
 
+  if (changed)
+    boring = 0;
+  else
+    ++boring;
+
   //Counts and then checks for re-seeding
   //Otherwise the display will die out at some point
-  if (++geck >= RESEEDRATE){
+  if (++geck >= RESEEDRATE || boring >= 5) {
     geck = 0;
     seedWorld();
   }
