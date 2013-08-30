@@ -1,4 +1,5 @@
 #include <Charliplexing.h>
+#include <avr/pgmspace.h>
 
 //**************************************************************//
 //  Name    : Pong for Arduino / Charlieplexing                 //
@@ -15,7 +16,7 @@
 /* ---------------------------------------------------------------------------*/
 /** The figures from 0 to 9 encoded in 7 lines of 5 bits :
  */
-const uint16_t figures[][7] = { 
+PROGMEM const byte figures[][7] = { 
 {14,17,17,17,17,17,14},
 {4,6,4,4,4,4,14},
 {14,17,16,14,1,1,31},
@@ -29,8 +30,8 @@ const uint16_t figures[][7] = {
 };
 
   
-int x,y,dx,dy;
-int sh1y,sh2y,s1,s2;
+int8_t x,y,dx,dy;
+int8_t sh1y,sh2y,s1,s2;
 
 
 /* ---------------------------------------------------------------------------*/
@@ -57,7 +58,7 @@ void setup() {
 /* Arduino main loop 
  */
 void loop() {
-  int ct1,ct2,randommove;
+  int8_t randommove;
 
 
   // The Ball shall bounce on the walls : 
@@ -176,7 +177,7 @@ void checkscores() {
  * Use the current active screen brutally ...
  */
 void drawscores() {
-  int i,j,ps1,ps2,ct2;
+  int8_t i,j,ps1;
   
   for(ps1=0;ps1<8;ps1++) {
     LedSign::Clear();  // Clear the active screen
@@ -186,23 +187,16 @@ void drawscores() {
     
     // Fill it with both scores : 
     // Left score goes up>down
-    i=ps1; j=6;
-    while (i>=0 && j>=0) {
-      for(uint8_t k = 0; k < 5; k++) {
-        LedSign::Set(k,i,(figures[s1][j] >> k) & 1 );
-      }
-      
-      i--; j--;
+    for (i=ps1, j=6; i>=0 && j>=0; i--, j--) {
+      byte f = pgm_read_byte_near(&figures[s1][j]);
+      for (uint8_t k = 0; k < 5; k++, f>>=1)
+        LedSign::Set(k, i, f & 1);
     }
     // Right score goes down>up
-    ps2=8-ps1;
-    i=ps2; j=0;
-    while (i<=8 && j<=6) {
-      for(uint8_t k = 0; k < 5; k++) {
-        LedSign::Set(k+9,i,(figures[s2][j] >> k) & 1 );
-      }
-
-      i++; j++;
+    for (i=8-ps1, j=0; i<=8 && j<=6; i++, j++) {
+      byte f = pgm_read_byte_near(&figures[s2][j]);
+      for (uint8_t k = 0; k < 5; k++, f>>=1)
+        LedSign::Set(k+9, i, f & 1);
     }    
 
     LedSign::Flip();
