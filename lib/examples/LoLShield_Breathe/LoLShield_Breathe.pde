@@ -22,10 +22,10 @@
 
 #include "Charliplexing.h"
 
-unsigned int inhale_time_ms  = 500;
-unsigned int hold_breath_ms  = 600;
-unsigned int exhale_time_ms  = 800;
-unsigned int pause_breath_ms = 2000;
+const unsigned int inhale_time_ms  = 500;
+const unsigned int hold_breath_ms  = 600;
+const unsigned int exhale_time_ms  = 800;
+const unsigned int pause_breath_ms = 2000;
 
 void setup()                    // run once, when the sketch starts
 {

@@ -25,13 +25,13 @@
 #include "Charliplexing.h"
 
 // Screen "refresh"
-unsigned int fps = 40;
-unsigned int fps_ms = 1000 / fps;
+const unsigned int fps = 40;
+const unsigned int fps_ms = 1000 / fps;
 
 unsigned int frames = 0;
 
 // number of frames to wait before advance animation
-unsigned int frames_per_step = 10;
+const unsigned int frames_per_step = 10;
 
 void setup()                    // run once, when the sketch starts
 {
@@ -41,7 +41,7 @@ void setup()                    // run once, when the sketch starts
 uint8_t i = 0; 
 void loop()                     // run over and over again
 { 
-  static unsigned long start = 0;
+  unsigned long start = 0;
   unsigned long end;
 
   for (int row = 0; row < DISPLAY_ROWS; row++)

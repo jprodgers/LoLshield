@@ -20,23 +20,23 @@
 // You can tweak these values to create a custom DNA molecule :)
 //
 
-float stretch = 0.44;           // The width of each sine wave. Smaller values create wider sine waves. I like 0.44 .
+const float stretch = 0.44;           // The width of each sine wave. Smaller values create wider sine waves. I like 0.44 .
 
-float phaseIncrement = 0.1;     // How fast the sines move. I like 0.1 .
+const float phaseIncrement = 0.1;     // How fast the sines move. I like 0.1 .
 
 // The phase of the "darker" sine wave will drift (relative to the "lighter" sine wave).
 // This makes the DoubleHelix more organic/hypnotic .
-float driftIncrement = 0.019;   // The speed it drifts back and forth. Larger == faster. I like 0.019 .
-float driftForce = 0.4;         // The visual amount of drift. I like 0.4 .
+const float driftIncrement = 0.019;   // The speed it drifts back and forth. Larger == faster. I like 0.019 .
+const float driftForce = 0.4;         // The visual amount of drift. I like 0.4 .
 
 // On every other column, light the LEDs between the sine waves, resembling the nucleotides of a DNA molecule.
 // This looks good if we switch between lighting odd columns, then even columns -- the molecule appears to be moving.
-float barPhaseIncrement = 0.09; // Bar movement speed. Plz use values between 0..1 . I like 0.09 .
+const float barPhaseIncrement = 0.09; // Bar movement speed. Plz use values between 0..1 . I like 0.09 .
 
 // Brightness values. Range is 0..7
-byte lightSineBrightness = 7;
-byte darkSineBrightness = 3;
-byte barBrightness = 1;
+const byte lightSineBrightness = 7;
+const byte darkSineBrightness = 3;
+const byte barBrightness = 1;
 
 // (End tweak section)
 /////////////////////////////////////////////////////////////////////////////
