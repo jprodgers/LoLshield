@@ -32,18 +32,17 @@ int level;
 /** The score of the user (number of points = speed of each killed ennemy - number of ennemies missed) */
 int score;
 
+/** Number of lines cleared at current level. */
+byte linesCleared;
+
 /** The game grid size. */
 const uint8_t GRID_HEIGHT = 14;
 const uint8_t GRID_WIDTH = 9;
 
 boolean playGrid[GRID_HEIGHT][GRID_WIDTH];
 
-/** Number of level steps. */
-const uint8_t NUM_LEVEL_STEPS = 4;
-const uint32_t LEVEL_STEPS[NUM_LEVEL_STEPS] = {200,600,1800,5400};
-
 const piece_t pieces[7] = {
-  {1, {
+  {{
     // The single view of the square piece :
     // 00
     // 00
@@ -52,15 +51,15 @@ const piece_t pieces[7] = {
     {{{1,1}, {2,1}, {1,2}, {2,2}}},
     {{{1,1}, {2,1}, {1,2}, {2,2}}},
   }},
-  {2, {
+  {{
     // The two views of the bar piece :
     // 0000
-    {{{0,2}, {1,2}, {2,2}, {3,2}}},
+    {{{0,1}, {1,1}, {2,1}, {3,1}}},
     {{{2,0}, {2,1}, {2,2}, {2,3}}},
-    {{{0,2}, {1,2}, {2,2}, {3,2}}},
+    {{{0,1}, {1,1}, {2,1}, {3,1}}},
     {{{2,0}, {2,1}, {2,2}, {2,3}}},
   }},
-  {1, {
+  {{
     // The two views of the first S :
     // 00
     //  00
@@ -69,7 +68,7 @@ const piece_t pieces[7] = {
     {{{0,1}, {1,1}, {1,2}, {2,2}}},
     {{{1,1}, {1,2}, {2,0}, {2,1}}},
   }},
-  {1, {
+  {{
     // The two views of the second S :
     //  00
     // 00
@@ -78,7 +77,7 @@ const piece_t pieces[7] = {
     {{{0,2}, {1,1}, {1,2}, {2,1}}},
     {{{0,0}, {0,1}, {1,1}, {1,2}}},
   }},
-  {1, {
+  {{
     // The four views of the first L :
     // 000
     // 0
@@ -87,7 +86,7 @@ const piece_t pieces[7] = {
     {{{0,1}, {1,1}, {2,0}, {2,1}}},
     {{{1,0}, {1,1}, {1,2}, {2,2}}},
   }},
-  {1, {
+  {{
     // The four views of the second L :
     // 000
     //   0
@@ -96,7 +95,7 @@ const piece_t pieces[7] = {
     {{{0,0}, {0,1}, {1,1}, {2,1}}},
     {{{0,2}, {1,0}, {1,1}, {1,2}}},
   }},
-  {1, {
+  {{
     // The four views of the T :
     // 000
     //  0
@@ -106,6 +105,9 @@ const piece_t pieces[7] = {
     {{{0,1}, {1,0}, {1,1}, {1,2}}},
   }},
 };
+
+const int levelMultiplier[] = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+const int linesMultiplier[] = {100, 400, 900, 2000};
 
 /** The piece being played. */
 const piece_t* currentPiece;
@@ -121,10 +123,9 @@ pos_t position;
 void switchPiece(const piece_t* piece, const pos_t& position, uint8_t c=1) {
   for(uint8_t i=0;i<4;i++) {
     coord_t element = piece->views[position.view].elements[i];
-    int8_t eltXPos = element.x+position.coord.x;
-    int8_t eltYPos = element.y+position.coord.y;
-    if (eltYPos>=0)
-      LedSign::Set(13-eltYPos, eltXPos, c);
+    uint8_t eltXPos = element.x+position.coord.x;
+    uint8_t eltYPos = element.y+position.coord.y;
+    LedSign::Set(13-eltYPos, eltXPos, c);
   }
 }
 
@@ -149,9 +150,8 @@ void redrawLines(uint8_t top, uint8_t bottom) {
  * End of the game, draw the score using a scroll.
  */
 void endGame() {
-  for(uint8_t x=0;x<=13;x++) {
-    for(uint8_t y=0;y<=8;y++)
-      LedSign::Set(13-x,y,0);
+  for (uint8_t y=0;y<=13;y++) {
+    LedSign::Vertical(13-y, 0);
     delay(100);
   }
   // Draw the score and scroll it
@@ -164,8 +164,9 @@ void endGame() {
  */
 void startGame() {
   // Initialize variables.
-  level = 1;
+  level = 0;
   score = 0;
+  linesCleared = 0;
   memset(playGrid, '\0', sizeof(playGrid)); 
   LedSign::Clear();
 }
@@ -178,24 +179,22 @@ void startGame() {
  * @param position the position and view to try and put the piece.
  */
 boolean checkPieceMove(const piece_t* piece, const pos_t& position) {
-  boolean isOk = true;
-
   for (uint8_t i=0; i<4; i++) {
     coord_t element = piece->views[position.view].elements[i];
-    // Check x boundaries.
     int8_t eltXPos = element.x+position.coord.x;
-    if (eltXPos>8 || eltXPos<0)
-      isOk = false;
-    // Check y boundaries.
     int8_t eltYPos = element.y+position.coord.y;
-    if (eltYPos>13)
-      isOk = false;
+    // Check x boundaries.
+    if (eltXPos>8 || eltXPos<0)
+      return false;
+    // Check y boundaries.
+    if (eltYPos>13 || eltYPos<0)
+      return false;
     // Check collisions in grid.
-    if (eltYPos>=0 && playGrid[eltYPos][eltXPos])
-      isOk = false;
+    if (playGrid[eltYPos][eltXPos])
+      return false;
   }
   
-  return isOk;
+  return true;
 }
 
 /* -----------------------------------------------------------------  */
@@ -265,9 +264,9 @@ void playerMovePiece()
  *              down at each call.
  */
 void timerPieceDown(uint32_t& count) {
-  // Every 8-level iterations, make the piece go down.
-  // TODO The level change code is largely untested an surely needs tweaking.
-  if (++count % (8-level) == 0) {
+  // Every 10-level iterations, make the piece go down.
+  // TODO The level change code is largely untested and surely needs tweaking.
+  if (++count % (10-level) == 0) {
     pos_t newPos = position;
     newPos.coord.y++;
 
@@ -280,10 +279,9 @@ void timerPieceDown(uint32_t& count) {
       // Drop the piece on the grid.
       for (uint8_t i=0; i<4; i++) {
         coord_t element = currentPiece->views[position.view].elements[i];
-        int8_t eltXPos = element.x+position.coord.x;
-        int8_t eltYPos = element.y+position.coord.y;
-        if (eltYPos>=0)
-          playGrid[eltYPos][eltXPos] = true;
+        uint8_t eltXPos = element.x+position.coord.x;
+        uint8_t eltYPos = element.y+position.coord.y;
+        playGrid[eltYPos][eltXPos] = true;
       }
  
       processEndPiece();
@@ -303,62 +301,48 @@ void timerPieceDown(uint32_t& count) {
  * - the level update when needed.
  */
 void processEndPiece() {
- 
-  int scoreIncr=level; // Increase the score one point per level per piece.
- 
   uint8_t fullLines[4];
   uint8_t numFull = 0;
   for (int8_t y=13; y>=0; y--) {
-    uint8_t currLineElts = 0;
-    for (uint8_t x=0; x<9; x++) {
-      if (playGrid[y][x]) {
-        currLineElts++;
-      }
-    }
-    if (currLineElts == 9) {
+    boolean full = true;
+    for (uint8_t x=0; x<9; x++)
+      if (!playGrid[y][x])
+	full = false;
+    if (full)
       fullLines[numFull++] = y;
-    }
   }
   
   if (numFull) {
     // Blink full lines.
-    uint8_t showHide = 0;
     for (uint8_t i=0; i<5; i++) {
-      for(uint8_t j=0; j<numFull; j++) {
-        LedSign::Vertical(13-fullLines[j], showHide);
-      }
-      showHide = 1-showHide;
+      for (uint8_t j=0; j<numFull; j++)
+        LedSign::Vertical(13-fullLines[j], i&1);
       delay(150);
     }
  
     // Remove full lines from the array.
-    int linesScoreIncr=level;
     for (uint8_t i=0; i<numFull; i++) {
-      // Points won are 4, 16, 64, 256 times the level for 1 to 4 lines.
-      scoreIncr*=4;
       uint8_t lineIdx = fullLines[i];
       // Move all lines above one step down.
-      for (uint8_t j=lineIdx; j>0; j--) {
+      for (uint8_t j=lineIdx; j>0; j--)
         memcpy(playGrid+j, playGrid+j-1, GRID_WIDTH*sizeof(boolean));
-      }
       memset(playGrid, '\0', GRID_WIDTH*sizeof(boolean));
 
       // Update the indexes of the other lines to remove.
-      for (uint8_t k=i; k<numFull; k++) {
+      for (uint8_t k=i; k<numFull; k++)
         fullLines[k]++;
-      }
     }
-    scoreIncr+=linesScoreIncr;
 
     // Update the display.
     redrawLines(0, fullLines[0]);
-  }
+
+    // Sega scoring algorithm.
+    score += levelMultiplier[level] * linesMultiplier[numFull-1];
   
-  // Level update.
-  score+=scoreIncr;
-  for (uint8_t i=0; i<NUM_LEVEL_STEPS; i++) {
-    uint32_t zeStep = LEVEL_STEPS[i];
-    if (zeStep>score-scoreIncr && zeStep<=score) {
+    // Level update.
+    linesCleared += numFull;
+    if (linesCleared >= 4) {
+      linesCleared = 0;
       level++;
     }
   }
@@ -372,7 +356,7 @@ void nextPiece() {
   currentPiece = &pieces[random(0,7)];
   
   position.coord.x = 3;
-  position.coord.y = 0-currentPiece->startrow;
+  position.coord.y = -1;
   position.view = 0;
 
   if (!checkPieceMove(currentPiece, position)) {
@@ -403,8 +387,5 @@ void loop()                     // run over and over again
 
   playerMovePiece();
   timerPieceDown(counter);
-
-  delay(50);
+  delay(40);
 }
-
-
