@@ -29,12 +29,8 @@
 
 namespace Font
 {
-
-extern uint8_t Draw(unsigned char letter,int x,int y,int set=1);
-
-extern uint8_t Draw90(unsigned char letter,int x,int y,int set=1);
-
+  extern uint8_t Draw(unsigned char letter, uint8_t x, uint8_t y, uint8_t c=1);
+  extern uint8_t Draw90(unsigned char letter, uint8_t x, uint8_t y, uint8_t c=1);
 }
 
 #endif
-

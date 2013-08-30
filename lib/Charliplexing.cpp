@@ -354,10 +354,10 @@ void LedSign::Flip(bool blocking)
 /** Clear the screen completely
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
-void LedSign::Clear(int set) {
-    for(int x=0;x<14;x++)  
-        for(int y=0;y<9;y++) 
-            Set(x,y,set);
+void LedSign::Clear(uint8_t c) {
+    for (uint8_t x=0; x<DISPLAY_COLS; x++)  
+        for (uint8_t y=0; y<DISPLAY_ROWS; y++) 
+            Set(x, y, c);
 }
 
 
@@ -366,9 +366,9 @@ void LedSign::Clear(int set) {
  * @param y is the y coordinate of the line to clear/light [0-8]
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
-void LedSign::Horizontal(int y, int set) {
-    for(int x=0;x<14;x++)  
-        Set(x,y,set);
+void LedSign::Horizontal(uint8_t y, uint8_t c) {
+    for (uint8_t x=0; x<DISPLAY_COLS; x++)  
+        Set(x, y, c);
 }
 
 
@@ -377,9 +377,9 @@ void LedSign::Horizontal(int y, int set) {
  * @param x is the x coordinate of the line to clear/light [0-13]
  * @param set if 1 : make all led ON, if not set or 0 : make all led OFF
  */
-void LedSign::Vertical(int x, int set) {
-    for(int y=0;y<9;y++)  
-        Set(x,y,set);
+void LedSign::Vertical(uint8_t x, uint8_t c) {
+    for (uint8_t y=0; y<DISPLAY_ROWS; y++)  
+        Set(x, y, c);
 }
 
 
@@ -399,8 +399,8 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
         c = SHADES-1;
 #endif
 
-    uint16_t mask = 1 << pgm_read_byte_near(&ledMap[x+y*14].high);
-    uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*14].cycle);
+    uint16_t mask = 1 << pgm_read_byte_near(&ledMap[x+y*DISPLAY_COLS].high);
+    uint8_t cycle = pgm_read_byte_near(&ledMap[x+y*DISPLAY_COLS].cycle);
 
     uint16_t *p = &workBuffer->pixels[cycle*(SHADES-1)];
     int i;

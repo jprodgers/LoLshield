@@ -28,11 +28,10 @@ namespace LedSign
     extern void Init(uint8_t mode = SINGLE_BUFFER);
     extern void Set(uint8_t x, uint8_t y, uint8_t c = 1);
     extern void SetBrightness(uint8_t brightness);
-    extern volatile unsigned int tcnt2;
     extern void Flip(bool blocking = false);
-    extern void Clear(int set=0);
-    extern void Horizontal(int y, int set=0);
-    extern void Vertical(int x, int set=0);
+    extern void Clear(uint8_t c = 0);
+    extern void Horizontal(uint8_t y, uint8_t c = 0);
+    extern void Vertical(uint8_t x, uint8_t c = 0);
 };
 
 #endif
