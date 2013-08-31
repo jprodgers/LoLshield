@@ -380,14 +380,15 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 void LedSign::SetBrightness(uint8_t brightness)
 {
     // An exponential fit seems to approximate a (perceived) linear scale
-    const float brightnessPercent = ((float)brightness / 127)*((float)brightness / 127);
+    const unsigned long brightnessPercent = ((unsigned int)brightness * (unsigned int)brightness + 8) >> 4; /*7b*2-4b = 10b*/
 
     /*   ---- This needs review! Please review. -- thilo  */
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
     uint8_t i;
-    const int max = 255;
-#define	C(x)	(0.49999f + max * brightnessPercent * fastPrescaler.relativeSpeed * x)
+    const uint8_t max = 255;
+    const unsigned long m = max * brightnessPercent * fastPrescaler.relativeSpeed; /*10b*/
+#define	C(x)	((m * (unsigned long)(x * 1024) + (1<<19)) >> 20) /*10b+10b-20b=0b*/
 #if SHADES == 2
     const int counts[SHADES] = {
 	0.0f,
