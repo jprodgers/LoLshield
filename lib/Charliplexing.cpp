@@ -490,10 +490,10 @@ ISR(TIMER1_COMPA_vect) {
     // their state is preserved when writing to the ports.
     if (page < SHADES - 1) {
         const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
-        PORTE = (PORTE & (~0x38)) | ((data << 1) & 0x38);
-        PORTG = (PORTG & (~0x20)) | ((data << 0) & 0x20);
-        PORTH = (PORTH & (~0x78)) | ((data >> 3) & 0x78);
-        PORTB = (PORTB & (~0xf0)) | ((data >> 6) & 0xf0);
+        PINE = (PORTE ^ (data << 1)) & 0x38;
+        PING = (PORTG ^ (data << 0)) & 0x20;
+        PINH = (PORTH ^ (data >> 3)) & 0x78;
+        PINB = (PORTB ^ (data >> 6)) & 0xf0;
         DDRE |= ((dir << 1) & 0x38);
         DDRG |= ((dir << 0) & 0x20);
         DDRH |= ((dir >> 3) & 0x78);
@@ -508,10 +508,10 @@ ISR(TIMER1_COMPA_vect) {
 
     if (page < SHADES - 1) {
         const uint16_t data = *displayPointer++, dir = data | (1 << (cycle));
-        PORTB = (PORTB & (~0xF0)) | ((data >> 4) & 0xF0);
-        PORTC = (PORTC & (~0xC0)) | ((data << 4) & 0xC0);
-        PORTD = (PORTD & (~0xD3)) | ((data << 0) & 0xD3);
-        PORTE = (PORTE & (~0x40)) | ((data << 1) & 0x40);
+        PINB = (PORTB ^ (data >> 4)) & 0xF0;
+        PINC = (PORTC ^ (data << 4)) & 0xC0;
+        PIND = (PORTD ^ (data << 0)) & 0xD3;
+        PINE = (PORTE ^ (data << 1)) & 0x40;
         DDRB |= ((dir >> 4) & 0xF0);
         DDRC |= ((dir << 4) & 0xC0);
         DDRD |= ((dir << 0) & 0xD3);
