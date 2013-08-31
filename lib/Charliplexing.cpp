@@ -478,57 +478,93 @@ ISR(TIMER1_COMPA_vect) {
 #endif
 
 #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
-    // Turn everything off
+    static uint16_t sink = 0;
+
+    PINE = (sink << 1) & 0x38;
+    PING = (sink << 0) & 0x20;
+    PINH = (sink >> 3) & 0x78;
+    PINB = (sink >> 6) & 0xf0;
+    //delayMicroseconds(1);
     DDRE &= ~0x38;
     DDRG &= ~0x20;
     DDRH &= ~0x78;
     DDRB &= ~0xf0;
 
-    // Pins on the Arduino MEGA 1280/2560 are mapped to different ports on the microcontroller
-    // than other board types. Need to remap the bits in displayBuffer to the correct pins.
-    // In this case, used ports have un-used pins. To allow these pins to be used,
-    // their state is preserved when writing to the ports.
-    if (page < SHADES - 1) {
-        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
-        PINE = (PORTE ^ (data << 1)) & 0x38;
-        PING = (PORTG ^ (data << 0)) & 0x20;
-        PINH = (PORTH ^ (data >> 3)) & 0x78;
-        PINB = (PORTB ^ (data >> 6)) & 0xf0;
-        DDRE |= ((dir << 1) & 0x38);
-        DDRG |= ((dir << 0) & 0x20);
-        DDRH |= ((dir >> 3) & 0x78);
-        DDRB |= ((dir >> 6) & 0xf0);
-    }
+    sink = 1 << (cycle+2);
+    uint16_t pins = sink;
+    if (page < SHADES - 1)
+        pins |= *displayPointer++;
+
+    PINE = (PORTE ^ (pins << 1)) & 0x38;
+    PING = (PORTG ^ (pins << 0)) & 0x20;
+    PINH = (PORTH ^ (pins >> 3)) & 0x78;
+    PINB = (PORTB ^ (pins >> 6)) & 0xf0;
+    //delayMicroseconds(1);
+    DDRE |= (pins << 1) & 0x38;
+    DDRG |= (pins << 0) & 0x20;
+    DDRH |= (pins >> 3) & 0x78;
+    DDRB |= (pins >> 6) & 0xf0;
+    PINE = (sink << 1) & 0x38;
+    PING = (sink << 0) & 0x20;
+    PINH = (sink >> 3) & 0x78;
+    PINB = (sink >> 6) & 0xf0;
 #elif defined (__AVR_ATmega32U4__)
-    // Turn everything off
+    static uint16_t sink = 0;
+
+    PINB = (sink >> 4) & 0xF0;
+    PINC = (sink << 4) & 0xC0;
+    PIND = (sink << 0) & 0xD3;
+    PINE = (sink << 1) & 0x40;
+    //delayMicroseconds(1);
     DDRB &= ~0xF0;
     DDRC &= ~0xC0;
     DDRD &= ~0xD3;
     DDRE &= ~0x40;
 
-    if (page < SHADES - 1) {
-        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle));
-        PINB = (PORTB ^ (data >> 4)) & 0xF0;
-        PINC = (PORTC ^ (data << 4)) & 0xC0;
-        PIND = (PORTD ^ (data << 0)) & 0xD3;
-        PINE = (PORTE ^ (data << 1)) & 0x40;
-        DDRB |= ((dir >> 4) & 0xF0);
-        DDRC |= ((dir << 4) & 0xC0);
-        DDRD |= ((dir << 0) & 0xD3);
-        DDRE |= ((dir << 1) & 0x40);
-    }
+    sink = 1 << (cycle);
+    uint16_t pins = sink;
+    if (page < SHADES - 1)
+        pins |= *displayPointer++;
+
+    PINB = (PORTB ^ (pins >> 4)) & 0xF0;
+    PINC = (PORTC ^ (pins << 4)) & 0xC0;
+    PIND = (PORTD ^ (pins << 0)) & 0xD3;
+    PINE = (PORTE ^ (pins << 1)) & 0x40;
+    //delayMicroseconds(1);
+    DDRB |= (pins >> 4) & 0xF0;
+    DDRC |= (pins << 4) & 0xC0;
+    DDRD |= (pins << 0) & 0xD3;
+    DDRE |= (pins << 1) & 0x40;
+    PINB = (sink >> 4) & 0xF0;
+    PINC = (sink << 4) & 0xC0;
+    PIND = (sink << 0) & 0xD3;
+    PINE = (sink << 1) & 0x40;
 #else
-    // Turn everything off
+    static uint16_t sink = 0;
+
+    // Set sink pin to Vcc/source, turning off current.
+    PIND = sink;
+    PINB = (sink >> 8);
+    //delayMicroseconds(1);
+    // Set pins to input mode; Vcc/source become pullups.
     DDRD = 0;
     DDRB = 0;
 
-    if (page < SHADES - 1) {
-        const uint16_t data = *displayPointer++, dir = data | (1 << (cycle+2));
-        PORTD = data;
-	PORTB = (data >> 8);
-        DDRD  = dir;
-        DDRB  = (dir >> 8);
-    }
+    sink = 1 << (cycle+2);
+    uint16_t pins = sink;
+    if (page < SHADES - 1)
+        pins |= *displayPointer++;
+
+    // Enable pullups on new output pins.
+    PORTD = pins;
+    PORTB = (pins >> 8);
+    //delayMicroseconds(1);
+    // Set pins to output mode; pullups become Vcc/source.
+    DDRD = pins;
+    DDRB = (pins >> 8);
+    // Set sink pin to GND/sink, turning on current.
+    PIND = sink;
+    PINB = (sink >> 8);
 #endif
 
     page++;
