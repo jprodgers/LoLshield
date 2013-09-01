@@ -80,36 +80,89 @@ volatile boolean videoFlipTimer = false;
 timerInfo timer[2], *frontTimer, *backTimer;
 
 
-// Record a slow and fast prescaler for later use
-typedef struct prescalerInfo {
-    uint8_t relativeSpeed;
-    uint8_t tccr2;
-};
+// Number of ticks of the prescaled timer per cycle per frame, based on the
+// CPU clock speed and the desired frame rate.
+#define	TICKS		(F_CPU + 6 * (FRAMERATE << SLOWSCALERSHIFT)) / (12 * (FRAMERATE << SLOWSCALERSHIFT))
 
-const prescalerInfo
+// Cutoff below which we need to use a lower prescaler.  This is designed
+// so that TICKS is always <128, to avoid arithmetic overflow calculating
+// individual "page" times.
+// TODO: Technically the 128 cutoff depends on SHADES, FASTSCALERSHIFT,
+// and the gamma curve.
+#define	CUTOFF(scaler)	((128 * 12 - 6) * FRAMERATE * scaler)
+
+const uint8_t
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega8__)
-#   if F_CPU < 8000000UL
-        fastPrescaler = { 8, _BV(CS20) },		// 1
-        slowPrescaler = { 1, _BV(CS21) };		// 8
+#   if F_CPU < CUTOFF(8)
+        fastPrescaler = _BV(CS20),				// 1
+        slowPrescaler = _BV(CS21);				// 8
+#       define SLOWSCALERSHIFT 3
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(64)
+        fastPrescaler = _BV(CS21),				// 8
+        slowPrescaler = _BV(CS22);				// 64
+#       define SLOWSCALERSHIFT 6
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(256)
+        fastPrescaler = _BV(CS22),				// 64
+        slowPrescaler = _BV(CS22) | _BV(CS21);			// 256
+#       define SLOWSCALERSHIFT 8
+#       define FASTSCALERSHIFT 2
+#   elif F_CPU < CUTOFF(1024)
+        fastPrescaler = _BV(CS22) | _BV(CS21),			// 256
+        slowPrescaler = _BV(CS22) | _BV(CS21) | _BV(CS20);	// 1024
+#       define SLOWSCALERSHIFT 10
+#       define FASTSCALERSHIFT 2
 #   else
-        fastPrescaler = { 4, _BV(CS21) },		// 8
-        slowPrescaler = { 1, _BV(CS21) | _BV(CS20) };	// 32
+#       error frame rate is too low
 #   endif
 #elif defined (__AVR_ATmega128__)
-#   if F_CPU < 8000000UL
-        fastPrescaler = { 8, _BV(CS20) },		// 1
-        slowPrescaler = { 1, _BV(CS21) };		// 8
+#   if F_CPU < CUTOFF(8)
+        fastPrescaler = _BV(CS20),		// 1
+        slowPrescaler = _BV(CS21);		// 8
+#       define SLOWSCALERSHIFT 3
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(64)
+        fastPrescaler = _BV(CS21),		// 8
+        slowPrescaler = _BV(CS21) | _BV(CS20);	// 64
+#       define SLOWSCALERSHIFT 6
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(256)
+        fastPrescaler = _BV(CS21) | _BV(CS20),	// 64
+        slowPrescaler = _BV(CS22);		// 256
+#       define SLOWSCALERSHIFT 8
+#       define FASTSCALERSHIFT 2
+#   elif F_CPU < CUTOFF(1024)
+        fastPrescaler = _BV(CS22),		// 256
+        slowPrescaler = _BV(CS22) | _BV(CS20);	// 1024
+#       define SLOWSCALERSHIFT 10
+#       define FASTSCALERSHIFT 2
 #   else
-        fastPrescaler = { 8, _BV(CS21) },		// 8
-        slowPrescaler = { 1, _BV(CS21) | _BV(CS20) };	// 64
+#       error frame rate is too low
 #   endif
 #elif defined (__AVR_ATmega32U4__)
-#   if F_CPU < 8000000UL
-        fastPrescaler = { 8, _BV(WGM12) | _BV(CS10) },			// 1
-        slowPrescaler = { 1, _BV(WGM12) | _BV(CS11) };			// 8
+#   if F_CPU < CUTOFF(8)
+        fastPrescaler = _BV(WGM12) | _BV(CS10),			// 1
+        slowPrescaler = _BV(WGM12) | _BV(CS11);			// 8
+#       define SLOWSCALERSHIFT 3
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(64)
+        fastPrescaler = _BV(WGM12) | _BV(CS11),			// 8
+        slowPrescaler = _BV(WGM12) | _BV(CS11) | _BV(CS10);	// 64
+#       define SLOWSCALERSHIFT 6
+#       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(256)
+        fastPrescaler = _BV(WGM12) | _BV(CS11) | _BV(CS10),	// 64
+        slowPrescaler = _BV(WGM12) | _BV(CS12);			// 256
+#       define SLOWSCALERSHIFT 8
+#       define FASTSCALERSHIFT 2
+#   elif F_CPU < CUTOFF(1024)
+        fastPrescaler = _BV(WGM12) | _BV(CS12),			// 256
+        slowPrescaler = _BV(WGM12) | _BV(CS12) | _BV(CS10);	// 1024
+#       define SLOWSCALERSHIFT 10
+#       define FASTSCALERSHIFT 2
 #   else
-        fastPrescaler = { 8, _BV(WGM12) | _BV(CS11) },			// 8
-        slowPrescaler = { 1, _BV(WGM12) | _BV(CS11) | _BV(CS10) };	// 64
+#       error frame rate is too low
 #   endif
 #else
 #   error no support for this chip
@@ -272,14 +325,14 @@ void LedSign::Init(uint8_t mode)
     // Then start the display
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__)
     TIMSK2 |= _BV(TOIE2);
-    TCCR2B = fastPrescaler.tccr2;
+    TCCR2B = fastPrescaler;
 #elif defined (__AVR_ATmega8__) || defined (__AVR_ATmega128__)
     TIMSK |= _BV(TOIE2);
-    TCCR2 = fastPrescaler.tccr2;
+    TCCR2 = fastPrescaler;
 #elif defined (__AVR_ATmega32U4__)
     // Enable output compare match interrupt
     TIMSK1 |= _BV(OCIE1A);
-    TCCR1B = fastPrescaler.tccr2;
+    TCCR1B = fastPrescaler;
 #endif
     // interrupt ASAP
 #if !defined (__AVR_ATmega32U4__)
@@ -386,8 +439,8 @@ void LedSign::SetBrightness(uint8_t brightness)
     // set up page counts
     // TODO: make SHADES a function parameter. This would require some refactoring.
     uint8_t i;
-    const uint8_t max = 255;
-    const unsigned long m = max * brightnessPercent * fastPrescaler.relativeSpeed; /*10b*/
+    const int ticks = TICKS;
+    const unsigned long m = (ticks << FASTSCALERSHIFT) * brightnessPercent; /*10b*/
 #define	C(x)	((m * (unsigned long)(x * 1024) + (1<<19)) >> 20) /*10b+10b-20b=0b*/
 #if SHADES == 2
     const int counts[SHADES] = {
@@ -424,13 +477,13 @@ void LedSign::SetBrightness(uint8_t brightness)
     for (i = 0; i < SHADES - 1; i++) {
         int interval = counts[i + 1] - counts[i];
         backTimer->counts[i] = 256 - (interval ? interval : 1);
-        backTimer->prescaler[i] = fastPrescaler.tccr2;
+        backTimer->prescaler[i] = fastPrescaler;
     }
 
     // Compute off time
-    int interval = max - counts[i] / fastPrescaler.relativeSpeed;
+    int interval = ticks - (counts[i] >> FASTSCALERSHIFT);
     backTimer->counts[i] = 256 - (interval ? interval : 1);
-    backTimer->prescaler[i] = slowPrescaler.tccr2;
+    backTimer->prescaler[i] = slowPrescaler;
 
     if (!initialized)
         *frontTimer = *backTimer;
