@@ -15,6 +15,8 @@
 #define DOUBLE_BUFFER 1	    // comment out to save memory
 #define GRAYSCALE     2	    // comment out to save memory
 
+#define FRAMERATE 80UL      // Desired number of frames per second
+
 #define DISPLAY_COLS 14     // Number of columns in the display
 #define DISPLAY_ROWS 9      // Number of rows in the display
 #ifdef GRAYSCALE
