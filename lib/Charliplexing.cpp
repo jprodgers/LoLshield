@@ -98,21 +98,31 @@ const uint8_t
         slowPrescaler = _BV(CS21);				// 8
 #       define SLOWSCALERSHIFT 3
 #       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(32)
+        fastPrescaler = _BV(CS21),				// 8
+        slowPrescaler = _BV(CS21) | _BV(CS20);			// 32
+#       define SLOWSCALERSHIFT 5
+#       define FASTSCALERSHIFT 2
 #   elif F_CPU < CUTOFF(64)
         fastPrescaler = _BV(CS21),				// 8
         slowPrescaler = _BV(CS22);				// 64
 #       define SLOWSCALERSHIFT 6
 #       define FASTSCALERSHIFT 3
+#   elif F_CPU < CUTOFF(128)
+        fastPrescaler = _BV(CS21) | _BV(CS20),			// 32
+        slowPrescaler = _BV(CS22) | _BV(CS20);			// 128
+#       define SLOWSCALERSHIFT 7
+#       define FASTSCALERSHIFT 2
 #   elif F_CPU < CUTOFF(256)
-        fastPrescaler = _BV(CS22),				// 64
+        fastPrescaler = _BV(CS21) | _BV(CS20),			// 32
         slowPrescaler = _BV(CS22) | _BV(CS21);			// 256
 #       define SLOWSCALERSHIFT 8
-#       define FASTSCALERSHIFT 2
+#       define FASTSCALERSHIFT 3
 #   elif F_CPU < CUTOFF(1024)
-        fastPrescaler = _BV(CS22) | _BV(CS21),			// 256
+        fastPrescaler = _BV(CS22) | _BV(CS20),			// 128
         slowPrescaler = _BV(CS22) | _BV(CS21) | _BV(CS20);	// 1024
 #       define SLOWSCALERSHIFT 10
-#       define FASTSCALERSHIFT 2
+#       define FASTSCALERSHIFT 3
 #   else
 #       error frame rate is too low
 #   endif
