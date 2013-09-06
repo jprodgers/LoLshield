@@ -41,7 +41,7 @@ void setup()                    // run once, when the sketch starts
 uint8_t i = 0; 
 void loop()                     // run over and over again
 { 
-  unsigned long start = 0;
+  static unsigned long start = 0;
   unsigned long end;
 
   for (int row = 0; row < DISPLAY_ROWS; row++)
