@@ -46,13 +46,13 @@ void setup()                    // run once, when the sketch starts
 /* -----------------------------------------------------------------  */
 /** MAIN program Loop
  */
+static const char test[]="HELLO WORLD!   ";
+
 void loop()                     // run over and over again
 {
-    const char test[]="HELLO WORLD!   ";
 
-    for (int8_t x=DISPLAY_COLS, i=0;;) {
+    for (int8_t x=DISPLAY_COLS, i=0;; x--) {
 	LedSign::Clear();
-	x--;
         for (int8_t x2=x, i2=i; x2<DISPLAY_COLS;) {
 	    int8_t w = Font::Draw(test[i2], x2, 0);
 	    x2 += w, i2 = (i2+1)%strlen(test);
