@@ -1,0 +1,5 @@
+This PCB is released under the Creative Commons Attribution-Share Alike 3.0 United States License.
+
+You may manufacture PCBs for both your own personal use, and for commertial use. You will have to provide a link to the original kit on any documentation or website.
+
+You may also modify the PCB files, but you must then release them as well. Credit can be attributed through a link to the product website: http://jimmieprodgers.com/apc/
