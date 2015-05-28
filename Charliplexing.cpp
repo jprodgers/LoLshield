@@ -435,6 +435,9 @@ void LedSign::Set(uint8_t x, uint8_t y, uint8_t c)
 	*p++ &= ~mask;   // OFF;
 }
 
+uint8_t LedSign::DisplayMode(){
+	return displayMode;
+}
 
 /* Set the overall brightness of the screen
  * @param brightness LED brightness, from 0 (off) to 127 (full on)

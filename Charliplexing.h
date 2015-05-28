@@ -36,6 +36,7 @@ namespace LedSign
     extern void Clear(uint8_t c = 0);
     extern void Horizontal(uint8_t y, uint8_t c = 0);
     extern void Vertical(uint8_t x, uint8_t c = 0);
+	extern uint8_t DisplayMode();
 };
 
 #endif

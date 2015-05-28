@@ -12,6 +12,8 @@ unsigned char text1[]="Blinky or GTFO";
 unsigned char text2[]="Enjoying the lightshow?";
 unsigned char text3[]="Would you like to play a game?";
 
+byte brightness = 7;
+
 //Game of Life stuff
 #define DELAY 150             //Sets the time each generation is shown
 #define RESEEDRATE 5000       //Sets the rate the world is re-seeded
@@ -21,22 +23,13 @@ byte world[SIZEX][SIZEY][2];  //Creates a double buffer world
 long density = 50;            //Sets density % during seeding
 int geck = 0;                 //Counter for re-seeding
 
-//ball stuff
-int collision[14][9];
-
 void setup(){
   toggleState = EEPROM.read(EEPROMaddress);
   upToggleState();
-
-  if (0==toggleState || 3==toggleState){
-    LedSign::Init(GRAYSCALE);
-  }
-  else{
-    LedSign::Init();
-  }
-
+  LedSign::Init(GRAYSCALE);
+  
   for (int i = toggleState+1; i > 0; i--){
-    LedSign::Set(i-1, 0, 255);
+    LedSign::Set(i-1, 0, brightness);
   }
   delay(1000);
   LedSign::Clear(0);
@@ -45,11 +38,13 @@ void setup(){
 
 void loop(){
   /*
-   0 *Plasma
-   3 *Game of Life
-   6 "Would you like to play a game?"
-   7 *Double Helix
+   0 Plasma
+   1 Game of Life
+   2 "Would you like to play a game?"
+   3 Double Helix
+   4 Basit test
    */
+   
   switch(toggleState){
   case 0:
     plasma();
@@ -276,105 +271,8 @@ void DNA(){
   }
 }
 
-void balls(){
-
-  //0 = xPos, 1 = xDir, 2 = yPos, 3 = yDir
-  /*int balls [][4] = {
-   {0,1,8,1},
-   {1,1,7,1},
-   {2,1,6,1}, 
-   {3,1,5,1}, 
-   {4,1,4,1},
-   {5,1,3,1}, 
-   {6,1,2,1}, 
-   {7,1,1,1}, 
-   {8,1,0,1},
-   {1,1,1,1},
-   {255}};
-   */
-  int balls [][4] = {
-    {
-      7,1,0,1    }
-    ,
-    {
-      6,1,1,1    }
-    ,
-    {
-      8,1,1,1    }
-    ,
-    {
-      5,1,2,1    }
-    ,
-    {
-      9,1,2,1    }
-    ,
-    {
-      4,1,3,1    }
-    ,
-    {
-      10,1,3,1    }
-    ,
-    {
-      5,1,4,1    }
-    ,
-    {
-      9,1,4,1    }
-    ,
-    {
-      6,1,5,1    }
-    ,
-    {
-      8,1,5,1    }
-    ,
-    {
-      7,1,6,1    }
-    ,
-    {
-      255    }
-  };
 
 
-  int numBalls;  
-  int scrollSpeed = 100;      //delay between frames
-
-  int collision[14][9];
-  //int clearedCollision[14][9];
-
-  LedSign::Init(); //initializes a grayscale frame buffer
-  for (numBalls = 0; numBalls < 255; numBalls++){
-    if(balls[numBalls][0] == 255) break;
-  }
-
-  while(true)                 // run over and over again
-  { 
-    for (int i = 0; i < numBalls; i++)moveBall(balls[i]);
-    delay(scrollSpeed);
-    LedSign::Clear(0);
-    for (int x = 0; x < 14; x++) for (int y = 0; y <9; y++) collision[x][y] = 0;
-  }
-
-}
-void moveBall(int ball[])
-{
-  //0 = xPos, 1 = Dir, 2 = yPos, 3 = yDir
-  if (ball[0] == 13)ball[1] = 0;
-  if (ball[0] == 0)ball[1] = 1;
-  if (ball[2] == 8)ball[3] = 0;
-  if (ball[2] == 0)ball[3] = 1;
-
-  if ((ball[1] == 1) && (collision[ball[0]+1][ball[2]]==1)) ball[1]= !ball[1];
-  if ((ball[1] == 0) && (collision[ball[0]-1][ball[2]]==1)) ball[1]= !ball[1];
-  if ((ball[3] == 1) && (collision[ball[0]][ball[2]+1]==1)) ball[3]= !ball[3];
-  if ((ball[3] == 0) && (collision[ball[0]][ball[2]-1]==1)) ball[3]= !ball[3];
-
-  if (ball[1]) ball[0]++;
-  else ball[0]--;
-
-  if (ball[3]) ball[2]++;
-  else ball[2]--;
-  collision[ball[0]][ball[2]] = 1;  
-  LedSign::Set(ball[0], ball[2], 1);  
-}
 
 void life(){
   /*
