@@ -5,8 +5,6 @@
 
 int toggleState;
 int EEPROMaddress = 0;
-int charLength[]={
-  20, 14, 23, 30};
 unsigned char text0[]="My eyes are up there";
 unsigned char text1[]="Blinky or GTFO";
 unsigned char text2[]="Enjoying the lightshow?";
@@ -42,7 +40,6 @@ void loop(){
    1 Game of Life
    2 "Would you like to play a game?"
    3 Double Helix
-   4 Basit test
    */
    
   switch(toggleState){
