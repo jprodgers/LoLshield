@@ -5,12 +5,8 @@
 
 int toggleState;
 int EEPROMaddress = 0;
-int charLength[]={
-  20, 14, 23, 30};
-unsigned char text0[]="My eyes are up there";
-unsigned char text1[]="Blinky or GTFO";
-unsigned char text2[]="Enjoying the lightshow?";
-unsigned char text3[]="Would you like to play a game?";
+int charLength = 30;
+unsigned char text[]="Would you like to play a game?";
 
 byte brightness = 7;
 
@@ -42,7 +38,7 @@ void loop(){
    1 Game of Life
    2 "Would you like to play a game?"
    3 Double Helix
-   4 Basit test
+
    */
    
   switch(toggleState){
@@ -53,7 +49,7 @@ void loop(){
     life();
     break;
   case 2:
-    Myfont::Banner(charLength[3],text3);
+    Myfont::Banner(charLength,text);
     break;
   case 3:
     DNA();
@@ -335,7 +331,7 @@ void life(){
         if (count == 3 && world[x][y][0] == 0) {
           // A new cell is born
           world[x][y][1] = 1; 
-          LedSign::Set(x,y,1);
+          LedSign::Set(x,y,brightness);
         } 
         else if ((count < 2 || count > 3) && world[x][y][0] == 1) {
           // Cell dies
