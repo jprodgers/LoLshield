@@ -33,7 +33,9 @@
                            //Initialized in setup.
 
 //Sets the time each frame is shown (milliseconds)
-const unsigned int blinkdelay = 1000 / 50;
+const unsigned int blinkdelay = 75;
+boolean fadeMode = false;
+byte brightness = 7; //Brightness goes from 0-7
 
 /*
 The BitMap array is what contains the frame data. Each line is one full frame.
@@ -128,11 +130,14 @@ PROGMEM const uint16_t BitMap[][9] = {
 };
 
 void setup() {
-  LedSign::Init(DOUBLE_BUFFER | GRAYSCALE);  //Initializes the screen
+  LedSign::Init(GRAYSCALE);  //Initializes the screen
 }
 void loop() {
-  for (uint8_t gray = 1; gray < SHADES; gray++)
+  
+  if(fadeMode)
+    for (uint8_t gray = 1; gray < SHADES; gray++)
       DisplayBitMap(gray);  //Displays the bitmap
+  else DisplayBitMap(brightness);  //Displays the bitmap
 }
 
 void DisplayBitMap(uint8_t grayscale)
