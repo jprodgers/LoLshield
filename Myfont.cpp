@@ -176,7 +176,7 @@ void Myfont::Draw(int xval, unsigned char chr) /*draws an ascii char to the scre
     }
 }
 
-void Myfont::Banner(int len, unsigned char* text){ /* text banner creator. use with example code!!*/
+void Myfont::Banner(int len, unsigned char* text, unsigned int scrollingDelay){ /* text banner creator. use with example code!!*/
     
     
     int xoff=14;/* setmx offset to the right end of the screen*/
@@ -185,7 +185,7 @@ void Myfont::Banner(int len, unsigned char* text){ /* text banner creator. use w
             Myfont::Draw(xoff + j*6, text[j]); /* call the draw font function*/
         }
         xoff--; /* decrement x offset*/
-        delay(70); /*scrolling speed increments if delay goes down*/
+        delay(scrollingDelay); /*scrolling speed increments if delay goes down*/
         LedSign::Clear(); /*empty the screen */
     }
     
