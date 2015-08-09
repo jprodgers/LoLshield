@@ -8,6 +8,6 @@
 namespace Myfont
 {
 extern void Draw(int xval, unsigned char chr);
-extern void Banner(int len, unsigned char* text);
+extern void Banner(int len, unsigned char* text, unsigned int scrollingDelay = 70);
 }
 #endif
